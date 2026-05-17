@@ -408,7 +408,7 @@ export function OffJerPage({ token, userProfile, isDarkMode = true }: OffJerPage
     { key: "counter5", label: "ספירה 5", subtitle: "כשר" },
     { key: "counter6", label: "ספירה 6", subtitle: "מונה בדיקה חלק 1" },
     { key: "counter7", label: "ספירה 7", subtitle: "מונה בדיקה חלק 2" },
-    { key: "counter8", label: "ספירה 8" },
+    { key: "counter8", label: "ספירה 8", subtitle: "מונה 8 לא בשימוש" },
   ];
 
   async function exportCSV() {
