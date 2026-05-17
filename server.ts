@@ -1248,13 +1248,14 @@ app.get("/api/admin/recent-logins", authenticateToken, authorizeAdmin, async (re
     const cutoff  = Date.now() - 48 * 60 * 60 * 1000;
     const logins: any[] = [];
 
-    // Check today + previous 2 days to guarantee full 48 h coverage even when a day is skipped
-    for (let daysAgo = 0; daysAgo <= 2; daysAgo++) {
-      const d = new Date();
-      d.setDate(d.getDate() - daysAgo);
-      const filePath = path.join(logsDir, `app-${d.toISOString().split('T')[0]}.log`);
-      if (!fs.existsSync(filePath)) continue;
+    // Scan ALL log files — Winston keeps the same file for the entire server lifetime,
+    // so the active log may be named after the startup date, not today.
+    const allFiles = fs.existsSync(logsDir)
+      ? fs.readdirSync(logsDir).filter(f => f.startsWith('app-') && f.endsWith('.log'))
+      : [];
 
+    for (const fileName of allFiles) {
+      const filePath = path.join(logsDir, fileName);
       const lines = fs.readFileSync(filePath, 'utf-8').split(/\r?\n/);
       for (const line of lines) {
         if (!line.includes('Login successful')) continue;
