@@ -678,7 +678,7 @@ app.get("/api/devices", authenticateToken, async (req: any, res) => {
 });
 
 // ── Customer input validation ──────────────────────────────────────────────────
-const VALID_APPLICATIONS = ['Energy', 'Weighing', 'Level', 'Temperature', 'Custom', 'Ocio', 'OffJer'];
+const VALID_APPLICATIONS = ['Energy', 'Weighing', 'Level', 'Level_PsKs', 'Temperature', 'Custom', 'Ocio', 'OffJer'];
 const VALID_ROLES = ['user', 'admin'];
 
 function validateCustomerInput(body: any, isCreate: boolean): string[] {
@@ -1652,6 +1652,104 @@ app.get("/api/level/data", authenticateToken, async (req: any, res) => {
   } catch (err: any) {
     logger.error("Failed to fetch level data", { error: err.message });
     res.status(500).json({ error: "Failed to fetch level data" });
+  }
+});
+
+// ── PS-KS (Level_PsKs) endpoints ───────────────────────────────────────────────
+
+// GET /api/psks/devices — returns all Level_PsKs devices for the logged-in user
+app.get("/api/psks/devices", authenticateToken, async (req: any, res) => {
+  try {
+    const { role, user_name } = req.user;
+    let query = `SELECT id_user,
+                        CAST(site_name AS NVARCHAR(255)) AS site_name,
+                        CAST(location AS NVARCHAR(255)) AS location,
+                        CAST(unit AS VARCHAR(20)) AS unit,
+                        min, max, alert_low, alert_high,
+                        CAST(widget_type AS VARCHAR(20)) AS widget_type,
+                        CAST(CAST(Display_Graph AS TINYINT) AS BIT) AS Display_Graph,
+                        cast_num
+                 FROM ${getTableName('Custumer', 'customers')}
+                 WHERE application = 'Level_PsKs'`;
+    const params: any[] = [];
+    if (role === 'user') {
+      query += ` AND CAST(user_name AS NVARCHAR(MAX)) = @user_name`;
+      params.push({ name: 'user_name', type: sql.NVarChar, value: user_name });
+    }
+    const result = await runQuery(query, params);
+    res.json(result.recordset);
+  } catch (err: any) {
+    logger.error("Failed to fetch psks devices", { error: err.message });
+    res.status(500).json({ error: "Failed to fetch psks devices" });
+  }
+});
+
+// GET /api/psks/data — returns readings (level, battery, signal, interrupt) from cast table
+app.get("/api/psks/data", authenticateToken, async (req: any, res) => {
+  try {
+    const { user_name } = req.user;
+    const device_id = parseInt(req.query.device_id as string);
+    if (!device_id) return res.status(400).json({ error: 'device_id is required' });
+
+    const userResult = await runQuery(
+      `SELECT TOP 1 cast_num, ISNULL(device_id, id_user) AS hw_id FROM ${getTableName('Custumer', 'customers')}
+       WHERE CAST(user_name AS NVARCHAR(MAX)) = @user_name AND id_user = @device_id`,
+      [
+        { name: 'user_name', type: sql.NVarChar, value: user_name },
+        { name: 'device_id', type: sql.Int,      value: device_id },
+      ]
+    );
+    const cast_num = userResult.recordset[0]?.cast_num;
+    const hw_id   = userResult.recordset[0]?.hw_id ?? device_id;
+    if (!cast_num) return res.status(404).json({ error: 'No cast table configured for this device' });
+
+    const customersDb = sqlConfig.customersDatabase || sqlConfig.database;
+    const tableName = `[${customersDb}].[dbo].[cast_${cast_num}]`;
+    const days  = parseInt(req.query.days  as string) || 0;
+    const start = req.query.start as string | undefined;
+    const end   = req.query.end   as string | undefined;
+
+    // ts is stored as Israel local time (+3h) — convert to UTC for consistent frontend handling
+    const tsExpr = `ts AT TIME ZONE 'Israel Standard Time' AT TIME ZONE 'UTC' AS timestamp`;
+
+    let dataResult;
+    if (start && end) {
+      const endDate = new Date(end);
+      endDate.setHours(23, 59, 59, 999);
+      dataResult = await runQuery(
+        `SELECT ${tsExpr}, level, battery, signal, interrupt FROM ${tableName}
+         WHERE Device_ID = @hw_id AND ts >= @start AND ts <= @end
+         ORDER BY ts ASC`,
+        [
+          { name: 'hw_id', type: sql.Int,      value: hw_id },
+          { name: 'start', type: sql.DateTime,  value: new Date(start) },
+          { name: 'end',   type: sql.DateTime,  value: endDate },
+        ]
+      );
+    } else if (days > 0) {
+      dataResult = await runQuery(
+        `SELECT ${tsExpr}, level, battery, signal, interrupt FROM ${tableName}
+         WHERE Device_ID = @hw_id AND ts >= DATEADD(day, -@days, GETDATE())
+         ORDER BY ts ASC`,
+        [
+          { name: 'hw_id', type: sql.Int, value: hw_id },
+          { name: 'days',  type: sql.Int, value: days },
+        ]
+      );
+    } else {
+      dataResult = await runQuery(
+        `SELECT TOP 50 ${tsExpr}, level, battery, signal, interrupt FROM ${tableName}
+         WHERE Device_ID = @hw_id
+         ORDER BY ts DESC`,
+        [{ name: 'hw_id', type: sql.Int, value: hw_id }]
+      );
+      dataResult.recordset.reverse();
+    }
+    logger.info("PsKs data query", { device_id, hw_id, rows: dataResult.recordset.length, user: req.user?.user_name });
+    res.json(dataResult.recordset);
+  } catch (err: any) {
+    logger.error("Failed to fetch psks data", { error: err.message });
+    res.status(500).json({ error: "Failed to fetch psks data" });
   }
 });
 

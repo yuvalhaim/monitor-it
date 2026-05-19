@@ -22,7 +22,7 @@ import {
   Activity,
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
-import { Device, EnergyData, User, WeighingDevice, OcioDevice, LevelDevice, OffJerDevice } from '../types';
+import { Device, EnergyData, User, WeighingDevice, OcioDevice, LevelDevice, PsKsDevice, OffJerDevice } from '../types';
 import { cn } from '../lib/utils';
 
 interface SidebarProps {
@@ -41,6 +41,9 @@ interface SidebarProps {
   levelDevices?: LevelDevice[];
   selectedLevelId?: number | null;
   onSelectLevelDevice?: (id: number) => void;
+  psKsDevices?: PsKsDevice[];
+  selectedPsKsId?: number | null;
+  onSelectPsKsDevice?: (id: number) => void;
   offJerDevices?: OffJerDevice[];
   selectedOffJerId?: number | null;
   onSelectOffJerDevice?: (id: number) => void;
@@ -65,6 +68,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   levelDevices = [],
   selectedLevelId,
   onSelectLevelDevice,
+  psKsDevices = [],
+  selectedPsKsId,
+  onSelectPsKsDevice,
   offJerDevices = [],
   selectedOffJerId,
   onSelectOffJerDevice,
@@ -106,6 +112,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const isWeighing = application === 'Weighing';
   const isOcio     = application === 'Ocio';
   const isLevel    = application === 'Level';
+  const isPsKs     = application === 'Level_PsKs';
   const isHaifa    = application === 'Custom';
   const isOffJer   = application === 'OffJer';
 
@@ -123,6 +130,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
     ] : []),
     ...(isLevel ? [
       { label: 'מפלס', icon: Waves, path: '/level' },
+    ] : []),
+    ...(isPsKs ? [
+      { label: 'מפלס PS-KS', icon: Waves, path: '/level/ps_ks' },
     ] : []),
     ...(isHaifa ? [
       { label: 'ניטור מים', icon: Droplets, path: '/custom/haifa' },
@@ -278,7 +288,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="flex-1 overflow-y-auto overscroll-contain custom-scrollbar p-4">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm md:text-xs font-bold uppercase tracking-widest text-[var(--sidebar-muted)]">מידע</h3>
-          {!isWeighing && !isOcio && !isLevel && !isHaifa && !isOffJer && (
+          {!isWeighing && !isOcio && !isLevel && !isPsKs && !isHaifa && !isOffJer && (
             <button
               onClick={() => onSelectDevice(null)}
               className="text-xs md:text-[10px] font-bold text-[var(--primary)] hover:underline uppercase tracking-wider"
@@ -412,6 +422,40 @@ export const Sidebar: React.FC<SidebarProps> = ({
               >
                 <Icon className="w-4 h-4" />
                 <span className="text-base md:text-sm">{label}</span>
+              </button>
+            ))}
+          </div>
+        ) : isPsKs ? (
+          /* ── PS-KS device list ── */
+          <div className="space-y-1">
+            {psKsDevices.map((device) => (
+              <button
+                key={device.id_user}
+                onClick={() => { onSelectPsKsDevice?.(device.id_user); closeOnMobile(); }}
+                className={cn(
+                  "w-full text-right p-3 rounded-xl border transition-all duration-200 group relative overflow-hidden",
+                  selectedPsKsId === device.id_user
+                    ? "bg-[var(--primary)]/20 border-[var(--primary)]"
+                    : "bg-transparent border-transparent hover:bg-[var(--sidebar-hover)]"
+                )}
+              >
+                <div className="flex items-start justify-between mb-1">
+                  <div className="flex items-center gap-2">
+                    <Waves className={cn("w-3.5 h-3.5", selectedPsKsId === device.id_user ? "text-[var(--primary)]" : "text-[var(--sidebar-muted)] group-hover:text-[var(--sidebar-foreground)]")} />
+                    <span className={cn(
+                      "text-base md:text-sm font-bold truncate",
+                      selectedPsKsId === device.id_user ? "text-[var(--sidebar-foreground)]" : "text-[var(--sidebar-muted)] group-hover:text-[var(--sidebar-foreground)]"
+                    )}>
+                      {device.site_name || `מכשיר ${device.id_user}`}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-sm md:text-sm text-[var(--sidebar-muted)] font-mono uppercase tracking-tighter">#{device.id_user} · {device.unit}</span>
+                </div>
+                {selectedPsKsId === device.id_user && (
+                  <div className="absolute right-0 top-0 bottom-0 w-1 bg-[var(--primary)]" />
+                )}
               </button>
             ))}
           </div>

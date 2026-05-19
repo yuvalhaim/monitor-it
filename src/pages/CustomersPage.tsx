@@ -137,6 +137,7 @@ export function CustomersPage({ token }: CustomersPageProps) {
         energy: 'Energy', Energy: 'Energy',
         weighing: 'Weighing', Weighing: 'Weighing', wighing: 'Weighing',
         level: 'Level', Level: 'Level',
+        level_psks: 'Level_PsKs', Level_PsKs: 'Level_PsKs',
         temperature: 'Temperature', Temperature: 'Temperature',
         custom: 'Custom', Custom: 'Custom', custum: 'Custom',
         ocio: 'Ocio', Ocio: 'Ocio',
@@ -201,7 +202,7 @@ export function CustomersPage({ token }: CustomersPageProps) {
     if (formData.contact_name && formData.contact_name.trim().length > 100)
       errs.contact_name = 'מקסימום 100 תווים';
 
-    const validApps = ['Energy', 'Weighing', 'Temperature', 'Custom', 'Ocio', 'Level', 'OffJer'];
+    const validApps = ['Energy', 'Weighing', 'Temperature', 'Custom', 'Ocio', 'Level', 'Level_PsKs', 'OffJer'];
     if (!validApps.includes(formData.application)) errs.application = 'ערך יישום לא חוקי';
 
     const validRoles = ['user', 'admin'];
@@ -588,6 +589,7 @@ export function CustomersPage({ token }: CustomersPageProps) {
                       <option value="Energy">Energy</option>
                       <option value="Weighing">Weighing</option>
                       <option value="Level">Level</option>
+                      <option value="Level_PsKs">Level_PsKs</option>
                       <option value="Temperature">Temperature</option>
                       <option value="Custom">Custom</option>
                       <option value="Ocio">Ocio</option>

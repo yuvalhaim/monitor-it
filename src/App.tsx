@@ -12,11 +12,12 @@ import { CustomersPage } from "./pages/CustomersPage";
 import { WeighingPage } from "./pages/WeighingPage";
 import { OcioPage } from "./pages/OcioPage";
 import { LevelPage } from "./pages/LevelPage";
+import { PsKsPage } from "./pages/PsKsPage";
 import { HaifaPage } from "./pages/HaifaPage";
 import { OffJerPage } from "./pages/OffJerPage";
 import { AdminOverviewPage } from "./pages/AdminOverviewPage";
 import { IoTWidgetsTestPage } from "./pages/IoTWidgetsTestPage";
-import { Device, AlertConfig, AlertHistory, User, EnergyData, WeighingDevice, OcioDevice, LevelDevice, OffJerDevice } from "./types";
+import { Device, AlertConfig, AlertHistory, User, EnergyData, WeighingDevice, OcioDevice, LevelDevice, PsKsDevice, OffJerDevice } from "./types";
 import { cn } from "./lib/utils";
 import { setUnauthorizedHandler } from "./lib/apiFetch";
 
@@ -45,6 +46,8 @@ export default function App() {
   const [selectedOcioId, setSelectedOcioId] = useState<number | null>(null);
   const [levelDevices, setLevelDevices] = useState<LevelDevice[]>([]);
   const [selectedLevelId, setSelectedLevelId] = useState<number | null>(null);
+  const [psKsDevices, setPsKsDevices] = useState<PsKsDevice[]>([]);
+  const [selectedPsKsId, setSelectedPsKsId] = useState<number | null>(null);
   const [offJerDevices, setOffJerDevices] = useState<OffJerDevice[]>([]);
   const [selectedOffJerId, setSelectedOffJerId] = useState<number | null>(null);
 
@@ -134,6 +137,21 @@ export default function App() {
     }
   };
 
+  const fetchPsKsDevices = async () => {
+    if (!token) return;
+    try {
+      const res = await fetch("/api/psks/devices", {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) return;
+      const data: PsKsDevice[] = await res.json();
+      setPsKsDevices(data);
+      if (data.length > 0) setSelectedPsKsId(prev => prev ?? data[0].id_user);
+    } catch (err) {
+      console.error("Error fetching psks devices:", err);
+    }
+  };
+
   const fetchOffJerDevices = async () => {
     if (!token) return;
     try {
@@ -200,6 +218,7 @@ export default function App() {
       fetchWeighingDevices();
       fetchOcioDevices();
       fetchLevelDevices();
+      fetchPsKsDevices();
       fetchOffJerDevices();
       fetchAlertsConfig();
       fetchAlertsHistory();
@@ -423,6 +442,9 @@ export default function App() {
             levelDevices={levelDevices}
             selectedLevelId={selectedLevelId}
             onSelectLevelDevice={setSelectedLevelId}
+            psKsDevices={psKsDevices}
+            selectedPsKsId={selectedPsKsId}
+            onSelectPsKsDevice={setSelectedPsKsId}
             offJerDevices={offJerDevices}
             selectedOffJerId={selectedOffJerId}
             onSelectOffJerDevice={setSelectedOffJerId}
@@ -444,6 +466,8 @@ export default function App() {
                   ? <Navigate to="/ocio" replace />
                   : userProfile?.application === 'Level'
                   ? <Navigate to="/level" replace />
+                  : userProfile?.application === 'Level_PsKs'
+                  ? <Navigate to="/level/ps_ks" replace />
                   : userProfile?.application === 'Custom'
                   ? <Navigate to="/custom/haifa" replace />
                   : userProfile?.application === 'OffJer'
@@ -458,6 +482,7 @@ export default function App() {
               <Route path="/weighing" element={<WeighingPage token={token} userProfile={userProfile} isDarkMode={isDarkMode} />} />
               <Route path="/ocio" element={<OcioPage token={token} userProfile={userProfile} isDarkMode={isDarkMode} />} />
               <Route path="/level" element={<LevelPage token={token} userProfile={userProfile} isDarkMode={isDarkMode} />} />
+              <Route path="/level/ps_ks" element={<PsKsPage token={token} userProfile={userProfile} isDarkMode={isDarkMode} />} />
               <Route path="/custom/haifa" element={<HaifaPage token={token} userProfile={userProfile} isDarkMode={isDarkMode} />} />
               <Route path="/custom/offjer" element={<OffJerPage token={token} userProfile={userProfile} isDarkMode={isDarkMode} />} />
               <Route path="/graph" element={<GraphPage devices={devices} token={token} isDebugMode={isDebugMode} />} />

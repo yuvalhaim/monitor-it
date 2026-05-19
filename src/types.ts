@@ -115,6 +115,20 @@ export interface LevelDevice {
   cast_num: number;
 }
 
+export interface PsKsDevice {
+  id_user: number;
+  site_name: string;
+  location?: string;
+  unit: string;
+  min: number;
+  max: number;
+  alert_low: number;
+  alert_high: number;
+  widget_type: string | null;
+  Display_Graph: boolean;
+  cast_num: number;
+}
+
 export interface OffJerDevice {
   id_user: number;
   site_name: string;
