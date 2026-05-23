@@ -746,7 +746,9 @@ app.get("/api/customers/all", authenticateToken, authorizeAdmin, async (req: any
       "min", "max", "alert_low", "alert_high",
       "CAST(widget_type AS VARCHAR(20)) AS widget_type",
       "CAST(CAST(Display_Graph AS TINYINT) AS BIT) AS Display_Graph",
-      "device_id"
+      "device_id",
+      "CAST(pub_topic AS NVARCHAR(200)) AS pub_topic",
+      "CAST(sub_topic AS NVARCHAR(200)) AS sub_topic"
     ].join(", ");
     const result = await runQuery(`SELECT DISTINCT ${fields} FROM ${getTableName('Custumer', 'customers')} ORDER BY id_user`, []);
     logger.info("Customers list fetched", { count: result.recordset.length, admin: req.user?.user_name });
@@ -804,9 +806,9 @@ app.post("/api/customers", authenticateToken, authorizeAdmin, async (req: any, r
     }
     await runQuery(`
         INSERT INTO ${getTableName('Custumer', 'customers')}
-          (id_user, user_name, site_name, location, contact_name, mobile_phone, email, date_exp, Alerts, application, password, role, cast_num, unit, min, max, alert_low, alert_high, widget_type, Display_Graph)
+          (id_user, user_name, site_name, location, contact_name, mobile_phone, email, date_exp, Alerts, application, password, role, cast_num, unit, min, max, alert_low, alert_high, widget_type, Display_Graph, pub_topic, sub_topic)
         VALUES
-          (@id_user, @user_name, @site_name, @location, @contact_name, @mobile_phone, @email, @date_exp, @Alerts, @application, @password, @role, @cast_num, @unit, @min, @max, @alert_low, @alert_high, @widget_type, @Display_Graph)
+          (@id_user, @user_name, @site_name, @location, @contact_name, @mobile_phone, @email, @date_exp, @Alerts, @application, @password, @role, @cast_num, @unit, @min, @max, @alert_low, @alert_high, @widget_type, @Display_Graph, @pub_topic, @sub_topic)
       `, [
       { name: "id_user",        type: sql.Int,      value: nextId },
       { name: "user_name",      type: sql.NVarChar, value: customer.user_name },
@@ -827,7 +829,9 @@ app.post("/api/customers", authenticateToken, authorizeAdmin, async (req: any, r
       { name: "alert_low",      type: sql.Float,    value: customer.alert_low ?? null },
       { name: "alert_high",     type: sql.Float,    value: customer.alert_high ?? null },
       { name: "widget_type",    type: sql.NVarChar, value: customer.widget_type || null },
-      { name: "Display_Graph",  type: sql.Bit,      value: customer.Display_Graph ? 1 : 0 }
+      { name: "Display_Graph",  type: sql.Bit,      value: customer.Display_Graph ? 1 : 0 },
+      { name: "pub_topic",      type: sql.NVarChar, value: customer.pub_topic || null },
+      { name: "sub_topic",      type: sql.NVarChar, value: customer.sub_topic || null }
     ]);
     logger.info("Customer created", { id_user: nextId, user_name: customer.user_name, email: customer.email, admin: req.user?.user_name, ip: req.ip });
     res.json({ success: true, id_user: nextId });
@@ -900,6 +904,8 @@ app.put("/api/customers/:id", authenticateToken, authorizeAdmin, async (req: any
       { name: "widget_type",   type: sql.NVarChar, value: customer.widget_type || null },
       { name: "Display_Graph", type: sql.Bit,      value: customer.Display_Graph ? 1 : 0 },
       { name: "device_id",    type: sql.Int,      value: customer.device_id != null ? parseInt(customer.device_id) : null },
+      { name: "pub_topic",    type: sql.NVarChar, value: customer.pub_topic || null },
+      { name: "sub_topic",    type: sql.NVarChar, value: customer.sub_topic || null },
     ];
 
     let passwordClause = '';
@@ -930,7 +936,9 @@ app.put("/api/customers/:id", authenticateToken, authorizeAdmin, async (req: any
             alert_high    = @alert_high,
             widget_type   = @widget_type,
             Display_Graph = @Display_Graph,
-            device_id     = @device_id
+            device_id     = @device_id,
+            pub_topic     = @pub_topic,
+            sub_topic     = @sub_topic
             ${passwordClause}
         WHERE id_user = @orig_id
       `, params);

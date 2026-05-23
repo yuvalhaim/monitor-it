@@ -24,6 +24,8 @@ interface Customer {
   widget_type: string | null;
   Display_Graph: boolean;
   device_id: number | null;
+  pub_topic: string | null;
+  sub_topic: string | null;
 }
 
 const EMPTY_FORM: Omit<Customer, 'id_user'> & { id_user: number | ''; password: string } = {
@@ -48,6 +50,8 @@ const EMPTY_FORM: Omit<Customer, 'id_user'> & { id_user: number | ''; password: 
   widget_type: null,
   Display_Graph: false,
   device_id: null,
+  pub_topic: null,
+  sub_topic: null,
 };
 
 interface CustomersPageProps {
@@ -154,6 +158,8 @@ export function CustomersPage({ token }: CustomersPageProps) {
       widget_type: c.widget_type ?? null,
       Display_Graph: c.Display_Graph === true || Number(c.Display_Graph) === 1,
       device_id: c.device_id ?? null,
+      pub_topic: c.pub_topic ?? null,
+      sub_topic: c.sub_topic ?? null,
     });
     setEditingId(c.id_user);
     setModalMode('edit');
@@ -375,64 +381,66 @@ export function CustomersPage({ token }: CustomersPageProps) {
       {/* Table */}
       <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full text-right border-collapse">
+          <table className="w-full text-right border-collapse" style={{fontSize:11}}>
             <thead>
-              <tr className="border-b border-[var(--border)] text-sm bg-[var(--background)]">
+              <tr className="border-b border-[var(--border)] bg-[var(--background)]">
                 {([
                   { key: 'id_user',      label: 'מזהה #' },
                   { key: 'cast_num',     label: 'Cast #' },
-                  { key: 'device_id',    label: 'Device ID' },
-                  { key: 'user_name',    label: 'שם משתמש' },
-                  { key: 'site_name',    label: 'שם אתר' },
+                  { key: 'device_id',    label: 'Dev ID' },
+                  { key: 'user_name',    label: 'משתמש' },
+                  { key: 'site_name',    label: 'אתר' },
                   { key: 'contact_name', label: 'איש קשר' },
                   { key: 'email',        label: 'אימייל' },
                   { key: 'application',  label: 'יישום' },
                   { key: 'role',         label: 'הרשאה' },
                   { key: 'date_exp',     label: 'תפוגה' },
+                  { key: 'pub_topic',    label: 'Pub Topic' },
+                  { key: 'sub_topic',    label: 'Sub Topic' },
                 ] as { key: keyof Customer; label: string }[]).map(col => (
-                  <th key={col.key} className="px-4 py-3 font-semibold">
+                  <th key={col.key} className="px-1.5 py-1 font-semibold whitespace-nowrap">
                     <button
                       onClick={() => toggleSort(col.key)}
-                      className="flex items-center gap-1 font-semibold hover:text-[var(--primary)] transition-colors w-full justify-end"
+                      className="flex items-center gap-0.5 font-semibold hover:text-[var(--primary)] transition-colors w-full justify-end"
                     >
                       {col.label}
                       {sortKey === col.key
                         ? sortDir === 'asc'
-                          ? <ChevronUp className="w-3.5 h-3.5 text-[var(--primary)]" />
-                          : <ChevronDown className="w-3.5 h-3.5 text-[var(--primary)]" />
-                        : <ChevronsUpDown className="w-3.5 h-3.5 opacity-30" />}
+                          ? <ChevronUp className="w-3 h-3 text-[var(--primary)]" />
+                          : <ChevronDown className="w-3 h-3 text-[var(--primary)]" />
+                        : <ChevronsUpDown className="w-3 h-3 opacity-30" />}
                     </button>
                   </th>
                 ))}
-                <th className="px-4 py-3 font-semibold text-left">פעולות</th>
+                <th className="px-1.5 py-1 font-semibold text-left whitespace-nowrap">פעולות</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border text-sm">
+            <tbody className="divide-y divide-border">
               {loading ? (
-                <tr><td colSpan={10} className="px-4 py-12 text-center">
+                <tr><td colSpan={12} className="px-4 py-12 text-center">
                   <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
                   <p className="mt-2 text-muted-foreground">טוען לקוחות...</p>
                 </td></tr>
               ) : filtered.length === 0 ? (
-                <tr><td colSpan={10} className="px-4 py-12 text-center text-muted-foreground">לא נמצאו לקוחות</td></tr>
+                <tr><td colSpan={12} className="px-4 py-12 text-center text-muted-foreground">לא נמצאו לקוחות</td></tr>
               ) : filtered.map(c => (
                 <tr key={c.id_user ?? `null-${c.user_name}`} className="hover:bg-muted/5 transition-colors">
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {c.id_user ?? <span className="text-xs text-red-400 font-mono">no-id</span>}
+                  <td className="px-1.5 py-1 text-muted-foreground text-center">
+                    {c.id_user ?? <span className="text-red-400 font-mono">!</span>}
                   </td>
-                  <td className="px-4 py-3 font-mono text-sm">
-                    {c.cast_num ?? <span className="text-xs text-muted-foreground">—</span>}
+                  <td className="px-1.5 py-1 font-mono text-center">
+                    {c.cast_num ?? <span className="text-muted-foreground">—</span>}
                   </td>
-                  <td className="px-4 py-3 font-mono text-sm">
-                    {c.device_id != null ? c.device_id : <span className="text-xs text-muted-foreground">—</span>}
+                  <td className="px-1.5 py-1 font-mono text-center">
+                    {c.device_id != null ? c.device_id : <span className="text-muted-foreground">—</span>}
                   </td>
-                  <td className="px-4 py-3 font-medium">{c.user_name}</td>
-                  <td className="px-4 py-3">{c.site_name}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{c.contact_name}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{c.email}</td>
-                  <td className="px-4 py-3">
+                  <td className="px-1.5 py-1 font-medium max-w-[80px]"><span className="block truncate" title={c.user_name}>{c.user_name}</span></td>
+                  <td className="px-1.5 py-1 max-w-[100px]"><span className="block truncate" title={c.site_name}>{c.site_name}</span></td>
+                  <td className="px-1.5 py-1 text-muted-foreground max-w-[80px]"><span className="block truncate" title={c.contact_name ?? ''}>{c.contact_name}</span></td>
+                  <td className="px-1.5 py-1 text-muted-foreground max-w-[120px]"><span className="block truncate" title={c.email ?? ''}>{c.email}</span></td>
+                  <td className="px-1.5 py-1">
                     <span className={cn(
-                      "px-2 py-0.5 rounded-full text-xs font-semibold",
+                      "px-1.5 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap",
                       c.application === 'Energy'      ? "bg-yellow-500/10 text-yellow-500" :
                       c.application === 'Level'       ? "bg-cyan-500/10 text-cyan-400" :
                       c.application === 'Weighing'    ? "bg-blue-500/10 text-blue-400" :
@@ -443,30 +451,40 @@ export function CustomersPage({ token }: CustomersPageProps) {
                       "bg-muted/20 text-muted-foreground"
                     )}>{c.application}</span>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-1.5 py-1">
                     <span className={cn(
-                      "px-2 py-0.5 rounded-full text-xs font-semibold",
+                      "px-1.5 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap",
                       c.role === 'admin' ? "bg-primary/10 text-primary" : "bg-muted/10 text-muted-foreground"
                     )}>{c.role === 'admin' ? 'מנהל' : 'משתמש'}</span>
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground">{c.date_exp ? c.date_exp.slice(0, 10) : '—'}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2 justify-end">
+                  <td className="px-2 py-2 text-muted-foreground whitespace-nowrap">{c.date_exp ? c.date_exp.slice(0, 10) : '—'}</td>
+                  <td className="px-1.5 py-1 font-mono max-w-[90px]">
+                    {c.pub_topic
+                      ? <span title={c.pub_topic} className="block truncate text-[var(--muted)]">{c.pub_topic}</span>
+                      : <span className="text-muted-foreground opacity-40">—</span>}
+                  </td>
+                  <td className="px-1.5 py-1 font-mono max-w-[90px]">
+                    {c.sub_topic
+                      ? <span title={c.sub_topic} className="block truncate text-[var(--muted)]">{c.sub_topic}</span>
+                      : <span className="text-muted-foreground opacity-40">—</span>}
+                  </td>
+                  <td className="px-1.5 py-1">
+                    <div className="flex items-center gap-1 justify-end">
                       <button
                         onClick={() => openEdit(c)}
                         disabled={!c.id_user}
-                        className={cn("p-1.5 rounded-lg transition-colors", c.id_user ? "hover:bg-primary/10 text-[var(--primary)]" : "opacity-30 cursor-not-allowed text-[var(--muted)]")}
+                        className={cn("p-1 rounded-lg transition-colors", c.id_user ? "hover:bg-primary/10 text-[var(--primary)]" : "opacity-30 cursor-not-allowed text-[var(--muted)]")}
                         title={c.id_user ? "עריכה" : "לא ניתן לערוך — אין מזהה (id_user=null)"}
                       >
-                        <Pencil className="w-4 h-4" />
+                        <Pencil className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => c.id_user && setDeleteTarget(c)}
                         disabled={!c.id_user}
-                        className={cn("p-1.5 rounded-lg transition-colors", c.id_user ? "hover:bg-red-500/10 text-[var(--status-offline)]" : "opacity-30 cursor-not-allowed text-[var(--muted)]")}
+                        className={cn("p-1 rounded-lg transition-colors", c.id_user ? "hover:bg-red-500/10 text-[var(--status-offline)]" : "opacity-30 cursor-not-allowed text-[var(--muted)]")}
                         title={c.id_user ? "מחיקה" : "לא ניתן למחוק — אין מזהה (id_user=null)"}
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </td>
@@ -628,6 +646,24 @@ export function CustomersPage({ token }: CustomersPageProps) {
                       value={formData.device_id ?? ''}
                       placeholder="ברירת מחדל: מזהה משתמש"
                       onChange={e => setFormData(p => ({ ...p, device_id: e.target.value ? parseInt(e.target.value) : null }))}
+                    />
+                  </Field>
+                  <Field label="Pub Topic (MQTT)">
+                    <input
+                      className={inputCls}
+                      placeholder="galoz/device/pub"
+                      value={formData.pub_topic ?? ''}
+                      maxLength={200}
+                      onChange={e => setFormData(p => ({ ...p, pub_topic: e.target.value || null }))}
+                    />
+                  </Field>
+                  <Field label="Sub Topic (MQTT)">
+                    <input
+                      className={inputCls}
+                      placeholder="galoz/device/sub"
+                      value={formData.sub_topic ?? ''}
+                      maxLength={200}
+                      onChange={e => setFormData(p => ({ ...p, sub_topic: e.target.value || null }))}
                     />
                   </Field>
                   <Field label="התראות">
