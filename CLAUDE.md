@@ -616,6 +616,21 @@ Ocio application uses a separate cast table (e.g. `cast_6`) with columns: `devic
 - **Double-submit guard**: `savingRef = useRef(false)` prevents a duplicate PUT request if the user clicks Save twice. The guard is set before `fetch` and cleared in `finally`.
 - **Duplicate `id_user` check**: The `PUT /api/customers/:id` handler verifies that the new `id_user` value doesn't already exist in the table before applying the update, and returns HTTP 400 with a Hebrew error message if it does.
 - **Do NOT change the `id_user` edit field to auto-increment** — the admin must be able to set it manually to keep `id_user` in sync with the sequential numbering scheme.
+- **ניהול משתמשים page removed** (2026-05-24) — fully superseded by ניהול לקוחות (CustomersPage).
+
+#### MQTT Columns in `[Galoziot].[dbo].[Custumer]`
+
+Three MQTT columns exist in the `Custumer` table and are fully editable from CustomersPage:
+
+| Column | Type | Purpose |
+|--------|------|---------|
+| `mqtt_client_id` | INT NULL | Unique MQTT client ID for this device |
+| `pub_topic` | NVARCHAR(200) NULL | Topic the device publishes to |
+| `sub_topic` | NVARCHAR(200) NULL | Topic the server subscribes to for this device |
+
+**Next available `mqtt_client_id`:** shown as a badge in the admin UI, computed as `Math.min(existing IDs) - 1`. IDs count downward — new devices get a lower number than the current minimum.
+
+**Scroll-wheel bug fix (2026-05-24):** All `type="number"` inputs in the CustomersPage modal have `onWheel={e => e.currentTarget.blur()}`. Without this, scrolling to reach the Save button while a number field is focused silently changes the value (each scroll tick ±1). This caused mqtt_client_id to drift by -2 consistently.
 
 ### Frontend Routes & Redirect Policies
 
@@ -627,7 +642,6 @@ Ocio application uses a separate cast table (e.g. `cast_6`) with columns: `devic
 | `/graph` | `GraphPage` | All users | |
 | `/calculator` | `CalculatorPage` | All users | |
 | `/alerts` | `Alerts` | All users | |
-| `/users` | `UsersPage` | **Admin only** | `role === 'admin'` guard in `App.tsx` |
 | `/customers` | `CustomersPage` | **Admin only** | `role === 'admin'` guard in `App.tsx` |
 | `/ocio` | `OcioPage` | All users | Level/volume monitoring; auto-redirect target for `application === 'Ocio'` |
 | `/iot-test` | `IoTWidgetsTestPage` | All users | |
