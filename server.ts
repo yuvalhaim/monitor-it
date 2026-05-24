@@ -748,7 +748,8 @@ app.get("/api/customers/all", authenticateToken, authorizeAdmin, async (req: any
       "CAST(CAST(Display_Graph AS TINYINT) AS BIT) AS Display_Graph",
       "device_id",
       "CAST(pub_topic AS NVARCHAR(200)) AS pub_topic",
-      "CAST(sub_topic AS NVARCHAR(200)) AS sub_topic"
+      "CAST(sub_topic AS NVARCHAR(200)) AS sub_topic",
+      "mqtt_client_id"
     ].join(", ");
     const result = await runQuery(`SELECT DISTINCT ${fields} FROM ${getTableName('Custumer', 'customers')} ORDER BY id_user`, []);
     logger.info("Customers list fetched", { count: result.recordset.length, admin: req.user?.user_name });
@@ -806,9 +807,9 @@ app.post("/api/customers", authenticateToken, authorizeAdmin, async (req: any, r
     }
     await runQuery(`
         INSERT INTO ${getTableName('Custumer', 'customers')}
-          (id_user, user_name, site_name, location, contact_name, mobile_phone, email, date_exp, Alerts, application, password, role, cast_num, unit, min, max, alert_low, alert_high, widget_type, Display_Graph, pub_topic, sub_topic)
+          (id_user, user_name, site_name, location, contact_name, mobile_phone, email, date_exp, Alerts, application, password, role, cast_num, unit, min, max, alert_low, alert_high, widget_type, Display_Graph, pub_topic, sub_topic, mqtt_client_id)
         VALUES
-          (@id_user, @user_name, @site_name, @location, @contact_name, @mobile_phone, @email, @date_exp, @Alerts, @application, @password, @role, @cast_num, @unit, @min, @max, @alert_low, @alert_high, @widget_type, @Display_Graph, @pub_topic, @sub_topic)
+          (@id_user, @user_name, @site_name, @location, @contact_name, @mobile_phone, @email, @date_exp, @Alerts, @application, @password, @role, @cast_num, @unit, @min, @max, @alert_low, @alert_high, @widget_type, @Display_Graph, @pub_topic, @sub_topic, @mqtt_client_id)
       `, [
       { name: "id_user",        type: sql.Int,      value: nextId },
       { name: "user_name",      type: sql.NVarChar, value: customer.user_name },
@@ -831,7 +832,8 @@ app.post("/api/customers", authenticateToken, authorizeAdmin, async (req: any, r
       { name: "widget_type",    type: sql.NVarChar, value: customer.widget_type || null },
       { name: "Display_Graph",  type: sql.Bit,      value: customer.Display_Graph ? 1 : 0 },
       { name: "pub_topic",      type: sql.NVarChar, value: customer.pub_topic || null },
-      { name: "sub_topic",      type: sql.NVarChar, value: customer.sub_topic || null }
+      { name: "sub_topic",      type: sql.NVarChar, value: customer.sub_topic || null },
+      { name: "mqtt_client_id", type: sql.Int,      value: customer.mqtt_client_id != null ? parseInt(customer.mqtt_client_id) : null }
     ]);
     logger.info("Customer created", { id_user: nextId, user_name: customer.user_name, email: customer.email, admin: req.user?.user_name, ip: req.ip });
     res.json({ success: true, id_user: nextId });
@@ -866,7 +868,7 @@ app.put("/api/customers/:id", authenticateToken, authorizeAdmin, async (req: any
   try {
     // Resolve new id_user — may differ from numericIdPut if the user changed it
     const newIdUser = customer.id_user ? parseInt(customer.id_user) : numericIdPut;
-    logger.info("PUT customers — id_user resolution", { orig_id: numericIdPut, body_id_user: customer.id_user, resolved_new_id: newIdUser });
+    logger.info("PUT customers — id_user resolution", { orig_id: numericIdPut, body_id_user: customer.id_user, resolved_new_id: newIdUser, mqtt_client_id: customer.mqtt_client_id, device_id: customer.device_id });
     if (isNaN(newIdUser) || newIdUser <= 0) {
       return res.status(400).json({ error: 'id_user must be a positive integer' });
     }
@@ -904,8 +906,9 @@ app.put("/api/customers/:id", authenticateToken, authorizeAdmin, async (req: any
       { name: "widget_type",   type: sql.NVarChar, value: customer.widget_type || null },
       { name: "Display_Graph", type: sql.Bit,      value: customer.Display_Graph ? 1 : 0 },
       { name: "device_id",    type: sql.Int,      value: customer.device_id != null ? parseInt(customer.device_id) : null },
-      { name: "pub_topic",    type: sql.NVarChar, value: customer.pub_topic || null },
-      { name: "sub_topic",    type: sql.NVarChar, value: customer.sub_topic || null },
+      { name: "pub_topic",      type: sql.NVarChar, value: customer.pub_topic || null },
+      { name: "sub_topic",      type: sql.NVarChar, value: customer.sub_topic || null },
+      { name: "mqtt_client_id", type: sql.Int,      value: customer.mqtt_client_id != null ? parseInt(customer.mqtt_client_id) : null },
     ];
 
     let passwordClause = '';
@@ -938,7 +941,8 @@ app.put("/api/customers/:id", authenticateToken, authorizeAdmin, async (req: any
             Display_Graph = @Display_Graph,
             device_id     = @device_id,
             pub_topic     = @pub_topic,
-            sub_topic     = @sub_topic
+            sub_topic     = @sub_topic,
+            mqtt_client_id = @mqtt_client_id
             ${passwordClause}
         WHERE id_user = @orig_id
       `, params);

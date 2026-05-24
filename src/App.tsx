@@ -7,7 +7,6 @@ import { Alerts } from "./pages/Alerts";
 import { Login } from "./pages/Login";
 import { GraphPage } from "./pages/GraphPage";
 import { CalculatorPage } from "./pages/CalculatorPage";
-import { UsersPage } from "./pages/UsersPage";
 import { CustomersPage } from "./pages/CustomersPage";
 import { WeighingPage } from "./pages/WeighingPage";
 import { OcioPage } from "./pages/OcioPage";
@@ -487,9 +486,7 @@ export default function App() {
               <Route path="/custom/offjer" element={<OffJerPage token={token} userProfile={userProfile} isDarkMode={isDarkMode} />} />
               <Route path="/graph" element={<GraphPage devices={devices} token={token} isDebugMode={isDebugMode} />} />
               <Route path="/calculator" element={<CalculatorPage devices={devices} token={token} isDebugMode={isDebugMode} />} />
-              {user.role === 'admin' && (
-                <Route path="/users" element={<UsersPage token={token} />} />
-              )}
+
               {user.role === 'admin' && (
                 <Route path="/customers" element={<CustomersPage token={token} />} />
               )}

@@ -26,6 +26,7 @@ interface Customer {
   device_id: number | null;
   pub_topic: string | null;
   sub_topic: string | null;
+  mqtt_client_id: number | null;
 }
 
 const EMPTY_FORM: Omit<Customer, 'id_user'> & { id_user: number | ''; password: string } = {
@@ -52,6 +53,7 @@ const EMPTY_FORM: Omit<Customer, 'id_user'> & { id_user: number | ''; password: 
   device_id: null,
   pub_topic: null,
   sub_topic: null,
+  mqtt_client_id: null,
 };
 
 interface CustomersPageProps {
@@ -86,6 +88,7 @@ export function CustomersPage({ token }: CustomersPageProps) {
   const [deleteTarget, setDeleteTarget] = useState<Customer | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+
   const fetchCustomers = async () => {
     if (!token) return;
     setLoading(true);
@@ -114,6 +117,10 @@ export function CustomersPage({ token }: CustomersPageProps) {
   };
 
   useEffect(() => { fetchCustomers(); }, [token]);
+
+  // MQTT next available ID
+  const _mqttIds = customers.filter(c => c.mqtt_client_id != null).map(c => c.mqtt_client_id as number);
+  const nextMqttId = _mqttIds.length > 0 ? Math.min(..._mqttIds) - 1 : 990;
 
   const showSuccess = (msg: string) => {
     setSuccessMessage(msg);
@@ -160,6 +167,7 @@ export function CustomersPage({ token }: CustomersPageProps) {
       device_id: c.device_id ?? null,
       pub_topic: c.pub_topic ?? null,
       sub_topic: c.sub_topic ?? null,
+      mqtt_client_id: c.mqtt_client_id ?? null,
     });
     setEditingId(c.id_user);
     setModalMode('edit');
@@ -358,6 +366,12 @@ export function CustomersPage({ token }: CustomersPageProps) {
         ))}
       </div>
 
+      {/* MQTT next-ID badge */}
+      <div className="flex items-center gap-2 text-sm font-mono">
+        <span className="text-[var(--muted)]">MQTT Client IDs — הבא:</span>
+        <span className="bg-[var(--card)] border border-[var(--border)] text-[var(--primary)] font-bold px-3 py-0.5 rounded-lg">{nextMqttId}</span>
+      </div>
+
       {/* Success */}
       <AnimatePresence>
         {successMessage && (
@@ -385,20 +399,20 @@ export function CustomersPage({ token }: CustomersPageProps) {
             <thead>
               <tr className="border-b border-[var(--border)] bg-[var(--background)]">
                 {([
-                  { key: 'id_user',      label: 'מזהה #' },
-                  { key: 'cast_num',     label: 'Cast #' },
-                  { key: 'device_id',    label: 'Dev ID' },
-                  { key: 'user_name',    label: 'משתמש' },
-                  { key: 'site_name',    label: 'אתר' },
-                  { key: 'contact_name', label: 'איש קשר' },
-                  { key: 'email',        label: 'אימייל' },
-                  { key: 'application',  label: 'יישום' },
-                  { key: 'role',         label: 'הרשאה' },
-                  { key: 'date_exp',     label: 'תפוגה' },
-                  { key: 'pub_topic',    label: 'Pub Topic' },
-                  { key: 'sub_topic',    label: 'Sub Topic' },
-                ] as { key: keyof Customer; label: string }[]).map(col => (
-                  <th key={col.key} className="px-1.5 py-1 font-semibold whitespace-nowrap">
+                  { key: 'id_user',        label: 'מזהה #',    w: 44 },
+                  { key: 'cast_num',       label: 'Cast #',    w: 44 },
+                  { key: 'device_id',      label: 'Dev ID',    w: 44 },
+                  { key: 'user_name',      label: 'משתמש' },
+                  { key: 'site_name',      label: 'אתר' },
+                  { key: 'contact_name',   label: 'איש קשר' },
+                  { key: 'email',          label: 'אימייל' },
+                  { key: 'application',    label: 'יישום' },
+                  { key: 'date_exp',       label: 'תפוגה' },
+                  { key: 'mqtt_client_id', label: 'MQTT',      w: 50 },
+                  { key: 'pub_topic',      label: 'Pub Topic' },
+                  { key: 'sub_topic',      label: 'Sub Topic' },
+                ] as { key: keyof Customer; label: string; w?: number }[]).map(col => (
+                  <th key={col.key} className="px-1.5 py-1 font-semibold whitespace-nowrap" style={col.w ? { width: col.w, minWidth: col.w } : {}}>
                     <button
                       onClick={() => toggleSort(col.key)}
                       className="flex items-center gap-0.5 font-semibold hover:text-[var(--primary)] transition-colors w-full justify-end"
@@ -417,27 +431,27 @@ export function CustomersPage({ token }: CustomersPageProps) {
             </thead>
             <tbody className="divide-y divide-border">
               {loading ? (
-                <tr><td colSpan={12} className="px-4 py-12 text-center">
+                <tr><td colSpan={13} className="px-4 py-12 text-center">
                   <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
                   <p className="mt-2 text-muted-foreground">טוען לקוחות...</p>
                 </td></tr>
               ) : filtered.length === 0 ? (
-                <tr><td colSpan={12} className="px-4 py-12 text-center text-muted-foreground">לא נמצאו לקוחות</td></tr>
+                <tr><td colSpan={13} className="px-4 py-12 text-center text-muted-foreground">לא נמצאו לקוחות</td></tr>
               ) : filtered.map(c => (
                 <tr key={c.id_user ?? `null-${c.user_name}`} className="hover:bg-muted/5 transition-colors">
-                  <td className="px-1.5 py-1 text-muted-foreground text-center">
+                  <td className="py-1 text-muted-foreground text-center" style={{ width: 44, minWidth: 44 }}>
                     {c.id_user ?? <span className="text-red-400 font-mono">!</span>}
                   </td>
-                  <td className="px-1.5 py-1 font-mono text-center">
+                  <td className="py-1 font-mono text-center" style={{ width: 44, minWidth: 44 }}>
                     {c.cast_num ?? <span className="text-muted-foreground">—</span>}
                   </td>
-                  <td className="px-1.5 py-1 font-mono text-center">
+                  <td className="py-1 font-mono text-center" style={{ width: 44, minWidth: 44 }}>
                     {c.device_id != null ? c.device_id : <span className="text-muted-foreground">—</span>}
                   </td>
                   <td className="px-1.5 py-1 font-medium max-w-[80px]"><span className="block truncate" title={c.user_name}>{c.user_name}</span></td>
-                  <td className="px-1.5 py-1 max-w-[100px]"><span className="block truncate" title={c.site_name}>{c.site_name}</span></td>
-                  <td className="px-1.5 py-1 text-muted-foreground max-w-[80px]"><span className="block truncate" title={c.contact_name ?? ''}>{c.contact_name}</span></td>
-                  <td className="px-1.5 py-1 text-muted-foreground max-w-[120px]"><span className="block truncate" title={c.email ?? ''}>{c.email}</span></td>
+                  <td className="px-1.5 py-1 max-w-[90px]"><span className="block truncate" title={c.site_name}>{c.site_name}</span></td>
+                  <td className="px-1.5 py-1 text-muted-foreground max-w-[70px]"><span className="block truncate" title={c.contact_name ?? ''}>{c.contact_name}</span></td>
+                  <td className="px-1.5 py-1 text-muted-foreground max-w-[100px]"><span className="block truncate" title={c.email ?? ''}>{c.email}</span></td>
                   <td className="px-1.5 py-1">
                     <span className={cn(
                       "px-1.5 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap",
@@ -451,13 +465,12 @@ export function CustomersPage({ token }: CustomersPageProps) {
                       "bg-muted/20 text-muted-foreground"
                     )}>{c.application}</span>
                   </td>
-                  <td className="px-1.5 py-1">
-                    <span className={cn(
-                      "px-1.5 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap",
-                      c.role === 'admin' ? "bg-primary/10 text-primary" : "bg-muted/10 text-muted-foreground"
-                    )}>{c.role === 'admin' ? 'מנהל' : 'משתמש'}</span>
+                  <td className="px-1.5 py-1 text-muted-foreground whitespace-nowrap">{c.date_exp ? c.date_exp.slice(0, 10) : '—'}</td>
+                  <td className="py-1 font-mono text-center" style={{ width: 50, minWidth: 50 }}>
+                    {c.mqtt_client_id != null
+                      ? <span className="text-[var(--primary)] font-bold">{c.mqtt_client_id}</span>
+                      : <span className="text-muted-foreground opacity-40">—</span>}
                   </td>
-                  <td className="px-2 py-2 text-muted-foreground whitespace-nowrap">{c.date_exp ? c.date_exp.slice(0, 10) : '—'}</td>
                   <td className="px-1.5 py-1 font-mono max-w-[90px]">
                     {c.pub_topic
                       ? <span title={c.pub_topic} className="block truncate text-[var(--muted)]">{c.pub_topic}</span>
@@ -528,6 +541,7 @@ export function CustomersPage({ token }: CustomersPageProps) {
                       min={0}
                       className={formErrors.cast_num ? inputErrCls : inputCls}
                       value={formData.cast_num ?? ''}
+                      onWheel={e => e.currentTarget.blur()}
                       onChange={e => { setFormData(p => ({ ...p, cast_num: e.target.value ? parseInt(e.target.value) : null })); setFormErrors(p => ({ ...p, cast_num: '' })); }}
                     />
                   </Field>
@@ -635,6 +649,7 @@ export function CustomersPage({ token }: CustomersPageProps) {
                       className={formErrors.id_user ? inputErrCls : inputCls}
                       value={formData.id_user}
                       placeholder={modalMode === 'add' ? 'ייווצר אוטומטית אם ריק' : ''}
+                      onWheel={e => e.currentTarget.blur()}
                       onChange={e => { setFormData(p => ({ ...p, id_user: e.target.value ? parseInt(e.target.value) : '' })); setFormErrors(p => ({ ...p, id_user: '' })); }}
                     />
                   </Field>
@@ -645,7 +660,18 @@ export function CustomersPage({ token }: CustomersPageProps) {
                       className={inputCls}
                       value={formData.device_id ?? ''}
                       placeholder="ברירת מחדל: מזהה משתמש"
+                      onWheel={e => e.currentTarget.blur()}
                       onChange={e => setFormData(p => ({ ...p, device_id: e.target.value ? parseInt(e.target.value) : null }))}
+                    />
+                  </Field>
+                  <Field label="MQTT Client ID">
+                    <input
+                      type="number"
+                      className={inputCls}
+                      value={formData.mqtt_client_id ?? ''}
+                      placeholder={`הבא: ${nextMqttId}`}
+                      onWheel={e => e.currentTarget.blur()}
+                      onChange={e => setFormData(p => ({ ...p, mqtt_client_id: e.target.value ? parseInt(e.target.value) : null }))}
                     />
                   </Field>
                   <Field label="Pub Topic (MQTT)">

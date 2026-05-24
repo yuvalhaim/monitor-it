@@ -9,7 +9,6 @@ import {
   BarChart3,
   Monitor,
   Search,
-  Users,
   User as UserIcon,
   Mail,
   Phone,
@@ -216,21 +215,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
           >
             <Building2 className={cn("w-4 h-4", location.pathname === '/customers' ? "text-[var(--sidebar-foreground)]" : "text-[var(--sidebar-muted)] group-hover:text-[var(--sidebar-foreground)]")} />
             <span className="text-base md:text-sm">ניהול לקוחות</span>
-          </Link>
-        )}
-        {user.role === 'admin' && (
-          <Link
-            to="/users"
-            onClick={closeOnMobile}
-            className={cn(
-              "flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 group",
-              location.pathname === '/users'
-                ? "bg-[var(--sidebar-hover)] text-[var(--sidebar-foreground)] font-bold"
-                : "text-[var(--sidebar-muted)] hover:bg-[var(--sidebar-hover)] hover:text-[var(--sidebar-foreground)]"
-            )}
-          >
-            <Users className={cn("w-4 h-4", location.pathname === '/users' ? "text-[var(--sidebar-foreground)]" : "text-[var(--sidebar-muted)] group-hover:text-[var(--sidebar-foreground)]")} />
-            <span className="text-base md:text-sm">ניהול משתמשים</span>
           </Link>
         )}
       </div>
