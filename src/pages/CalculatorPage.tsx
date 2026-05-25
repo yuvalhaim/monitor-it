@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Device } from '../types';
-import { Calculator, Calendar, Zap, RefreshCw, CheckCircle2, AlertCircle, ArrowLeft, Clock, Info, Search, Download, FileText } from 'lucide-react';
+import { Calculator, Calendar, Zap, RefreshCw, CheckCircle2, AlertCircle, ArrowLeft, Clock, Search, FileText } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { format, subDays } from 'date-fns';
 import { exportToPDF } from '../lib/exportUtils';
@@ -53,32 +53,29 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({ devices, token, 
   const [rawSearch, setRawSearch] = useState('');
 
   const calculateForDevice = async (deviceId: number, token: string, start: Date, end: Date) => {
-    const res = await fetch(`/api/energy/history/${deviceId}?start=${start.toISOString()}&end=${end.toISOString()}&limit=2000`, {
+    const res = await fetch(`/api/energy/range-edges/${deviceId}?start=${start.toISOString()}&end=${end.toISOString()}`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
-    if (!res.ok) throw new Error(`Failed to fetch history for device ${deviceId}`);
-    const history = await res.json();
-    
-    if (!history || !Array.isArray(history) || history.length === 0) return null;
+    if (!res.ok) throw new Error(`Failed to fetch range edges for device ${deviceId}`);
+    const { first: firstRecord, last: lastRecord } = await res.json();
 
-    const inRange = history.filter((d: any) => {
-      const ts = new Date(d.ts_getway);
-      return ts >= start && ts <= end;
-    });
+    if (!firstRecord || !lastRecord) return null;
+    if (firstRecord.ts_getway === lastRecord.ts_getway) return null;
 
-    if (inRange.length < 2) return null;
-
-    const sorted = inRange.sort((a: any, b: any) => new Date(a.ts_getway).getTime() - new Date(b.ts_getway).getTime());
-    const firstRecord = sorted[0];
-    const lastRecord = sorted[sorted.length - 1];
-    
     const consumption = lastRecord.kwtot - firstRecord.kwtot;
     const days = Math.max(0.1, (new Date(lastRecord.ts_getway).getTime() - new Date(firstRecord.ts_getway).getTime()) / (1000 * 60 * 60 * 24));
+
+    const t1 = Math.max(0, (lastRecord.kw_t1 ?? 0) - (firstRecord.kw_t1 ?? 0));
+    const t2 = Math.max(0, (lastRecord.kw_t2 ?? 0) - (firstRecord.kw_t2 ?? 0));
+    const t3 = Math.max(0, (lastRecord.kw_t3 ?? 0) - (firstRecord.kw_t3 ?? 0));
 
     return {
       deviceId,
       deviceName: devices.find(d => d.id_user === deviceId)?.site_name || `מכשיר ${deviceId}`,
       consumption: Math.max(0, consumption),
+      t1,
+      t2,
+      t3,
       days,
       startVal: firstRecord.kwtot,
       endVal: lastRecord.kwtot,
@@ -171,8 +168,8 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({ devices, token, 
     const fileName = `energy_calculation_${deviceName}_${dateStr}`;
     const dateRange = `${format(new Date(result.startDate), 'dd/MM/yyyy')} - ${format(new Date(result.endDate), 'dd/MM/yyyy')}`;
 
-    const headers = ['מונה', 'זמן התחלה', 'זמן סיום', 'קריאה התחלתית', 'קריאה סופית', 'צריכה kWh', 'ממוצע ליום'];
-    const tableData = result.isAll 
+    const headers = ['מונה', 'זמן התחלה', 'זמן סיום', 'קריאה התחלתית', 'קריאה סופית', 'צריכה kWh', 'T1 פסגה (kWh)', 'T2 גבע (kWh)', 'T3 שפל (kWh)', 'ממוצע ליום'];
+    const tableData = result.isAll
       ? result.items.map((item: any) => [
           item.deviceName,
           new Date(item.startDate).toLocaleString('he-IL'),
@@ -180,6 +177,9 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({ devices, token, 
           item.startVal.toLocaleString(undefined, { maximumFractionDigits: 1 }),
           item.endVal.toLocaleString(undefined, { maximumFractionDigits: 1 }),
           item.consumption.toLocaleString(undefined, { maximumFractionDigits: 1 }),
+          (item.t1 || 0).toLocaleString(undefined, { maximumFractionDigits: 1 }),
+          (item.t2 || 0).toLocaleString(undefined, { maximumFractionDigits: 1 }),
+          (item.t3 || 0).toLocaleString(undefined, { maximumFractionDigits: 1 }),
           (item.consumption / item.days).toFixed(2)
         ])
       : [[
@@ -189,6 +189,9 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({ devices, token, 
           result.startVal.toLocaleString(undefined, { maximumFractionDigits: 1 }),
           result.endVal.toLocaleString(undefined, { maximumFractionDigits: 1 }),
           result.consumption.toLocaleString(undefined, { maximumFractionDigits: 1 }),
+          (result.t1 || 0).toLocaleString(undefined, { maximumFractionDigits: 1 }),
+          (result.t2 || 0).toLocaleString(undefined, { maximumFractionDigits: 1 }),
+          (result.t3 || 0).toLocaleString(undefined, { maximumFractionDigits: 1 }),
           (result.consumption / result.days).toFixed(2)
         ]];
 
@@ -403,6 +406,9 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({ devices, token, 
                             <th className="p-4">קריאה התחלתית</th>
                             <th className="p-4">קריאה סופית</th>
                             <th className="p-4">צריכה (kWh)</th>
+                            <th className="p-4">T1 פסגה (kWh)</th>
+                            <th className="p-4">T2 גבע (kWh)</th>
+                            <th className="p-4">T3 שפל (kWh)</th>
                             <th className="p-4">ממוצע ליום</th>
                           </tr>
                         </thead>
@@ -416,6 +422,9 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({ devices, token, 
                                 <td className="p-4 text-lg md:text-sm text-[var(--muted)] font-mono">{item.startVal.toLocaleString(undefined, { maximumFractionDigits: 1 })}</td>
                                 <td className="p-4 text-lg md:text-sm text-[var(--muted)] font-mono">{item.endVal.toLocaleString(undefined, { maximumFractionDigits: 1 })}</td>
                                 <td className="p-4 text-lg md:text-sm font-bold text-[var(--foreground)] font-mono">{item.consumption.toLocaleString(undefined, { maximumFractionDigits: 1 })}</td>
+                                <td className="p-4 text-lg md:text-sm text-[var(--muted)] font-mono">{item.t1.toLocaleString(undefined, { maximumFractionDigits: 1 })}</td>
+                                <td className="p-4 text-lg md:text-sm text-[var(--muted)] font-mono">{item.t2.toLocaleString(undefined, { maximumFractionDigits: 1 })}</td>
+                                <td className="p-4 text-lg md:text-sm text-[var(--muted)] font-mono">{item.t3.toLocaleString(undefined, { maximumFractionDigits: 1 })}</td>
                                 <td className="p-4 text-lg md:text-sm text-[var(--primary)] font-mono">{(item.consumption / item.days).toFixed(2)}</td>
                               </tr>
                             ))
@@ -427,6 +436,9 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({ devices, token, 
                               <td className="p-4 text-lg md:text-sm text-[var(--muted)] font-mono">{result.startVal.toLocaleString(undefined, { maximumFractionDigits: 1 })}</td>
                               <td className="p-4 text-lg md:text-sm text-[var(--muted)] font-mono">{result.endVal.toLocaleString(undefined, { maximumFractionDigits: 1 })}</td>
                               <td className="p-4 text-lg md:text-sm font-bold text-[var(--foreground)] font-mono">{result.consumption.toLocaleString(undefined, { maximumFractionDigits: 1 })}</td>
+                              <td className="p-4 text-lg md:text-sm text-[var(--muted)] font-mono">{result.t1.toLocaleString(undefined, { maximumFractionDigits: 1 })}</td>
+                              <td className="p-4 text-lg md:text-sm text-[var(--muted)] font-mono">{result.t2.toLocaleString(undefined, { maximumFractionDigits: 1 })}</td>
+                              <td className="p-4 text-lg md:text-sm text-[var(--muted)] font-mono">{result.t3.toLocaleString(undefined, { maximumFractionDigits: 1 })}</td>
                               <td className="p-4 text-lg md:text-sm text-[var(--primary)] font-mono">{(result.consumption / result.days).toFixed(2)}</td>
                             </tr>
                           )}
@@ -436,6 +448,15 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({ devices, token, 
                             <tr className="bg-[var(--primary)]/5 font-bold">
                               <td colSpan={5} className="p-4 text-lg md:text-sm text-[var(--foreground)]">סה"כ משולב</td>
                               <td className="p-4 text-xl md:text-lg text-[var(--primary)] font-mono">{result.totalConsumption.toLocaleString(undefined, { maximumFractionDigits: 1 })}</td>
+                              <td className="p-4 text-lg md:text-sm text-[var(--muted)] font-mono">
+                                {result.items.reduce((sum: number, item: any) => sum + (item.t1 || 0), 0).toLocaleString(undefined, { maximumFractionDigits: 1 })}
+                              </td>
+                              <td className="p-4 text-lg md:text-sm text-[var(--muted)] font-mono">
+                                {result.items.reduce((sum: number, item: any) => sum + (item.t2 || 0), 0).toLocaleString(undefined, { maximumFractionDigits: 1 })}
+                              </td>
+                              <td className="p-4 text-lg md:text-sm text-[var(--muted)] font-mono">
+                                {result.items.reduce((sum: number, item: any) => sum + (item.t3 || 0), 0).toLocaleString(undefined, { maximumFractionDigits: 1 })}
+                              </td>
                               <td className="p-4 text-lg md:text-sm text-[var(--primary)] font-mono">
                                 {(result.items.reduce((sum: number, item: any) => sum + (item.consumption / item.days), 0)).toFixed(2)}
                               </td>

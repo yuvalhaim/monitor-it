@@ -1152,7 +1152,7 @@ app.get("/api/admin/overview", authenticateToken, authorizeAdmin, async (req: an
       const r = await runQuery(
         `SELECT Device_ID,
                 CONVERT(VARCHAR(23), CAST(MAX(ts_getway) AT TIME ZONE 'Israel Standard Time' AT TIME ZONE 'UTC' AS DATETIME), 126) + 'Z' AS last_seen_str,
-                DATEDIFF(SECOND, MAX(ts_getway), GETUTCDATE()) AS age_sec
+                DATEDIFF(SECOND, CAST(MAX(ts_getway) AT TIME ZONE 'Israel Standard Time' AT TIME ZONE 'UTC' AS DATETIME), GETUTCDATE()) AS age_sec
          FROM [${energyDb}].[dbo].[Energy]
          WHERE Device_ID IN (${hwIds})
          GROUP BY Device_ID`,
@@ -1198,16 +1198,20 @@ app.get("/api/admin/overview", authenticateToken, authorizeAdmin, async (req: an
       else if (app === 'custom')  tsCol = '[timestamp]';
       else                        tsCol = 'ts';
 
-      // Weighing and OffJer store ts as Israel-local; Level, Ocio, Custom, Energy store UTC.
-      const lastSeenExpr = (app === 'weighing' || app === 'offjer')
+      // Weighing, OffJer, and Energy store ts/ts_getway as Israel-local; Level, Ocio, Custom store UTC.
+      const isIsraelLocal = (app === 'weighing' || app === 'offjer' || app === 'energy');
+      const lastSeenExpr = isIsraelLocal
         ? `CONVERT(VARCHAR(23), CAST(${tsCol} AT TIME ZONE 'Israel Standard Time' AT TIME ZONE 'UTC' AS DATETIME), 126) + 'Z'`
         : `CONVERT(VARCHAR(23), ${tsCol}, 126) + 'Z'`;
+      const ageSecExpr = isIsraelLocal
+        ? `DATEDIFF(SECOND, CAST(${tsCol} AT TIME ZONE 'Israel Standard Time' AT TIME ZONE 'UTC' AS DATETIME), GETUTCDATE())`
+        : `DATEDIFF(SECOND, ${tsCol}, GETUTCDATE())`;
 
       try {
         const r = await runQuery(
           `SELECT TOP 1
              ${lastSeenExpr} AS last_seen_str,
-             DATEDIFF(SECOND, ${tsCol}, GETUTCDATE()) AS age_sec
+             ${ageSecExpr} AS age_sec
            FROM ${tableName}
            ${whereClause}
            ORDER BY ${tsCol} DESC`,
@@ -2414,6 +2418,64 @@ app.get("/api/energy/history/:device_id", authenticateToken, energyLimiter, ener
   } catch (err: any) {
     logger.error("Failed to fetch energy history", { device_id, error: err.message, route: "GET /api/energy/history/:device_id" });
     res.status(500).json({ error: "Failed to fetch energy history" });
+  }
+});
+
+// GET /api/energy/range-edges/:device_id?start=...&end=...
+// Returns only the first and last reading in the date range — used by the calculator.
+app.get("/api/energy/range-edges/:device_id", authenticateToken, energyLimiter, async (req: any, res) => {
+  const { device_id } = req.params;
+  const startStr = req.query.start as string;
+  const endStr   = req.query.end   as string;
+  if (!startStr || !endStr) return res.status(400).json({ error: 'start and end are required' });
+
+  if (isDemoMode) {
+    const record = DEMO_RECORDS.find(r => r.Device_ID === parseInt(device_id));
+    if (!record) return res.json({ first: null, last: null });
+    const start = new Date(startStr);
+    const end   = new Date(endStr);
+    return res.json({
+      first: { ...record, ts_getway: start.toISOString(), kwtot: record.kwtot - 200, kw_t1: record.kw_t1 - 160, kw_t2: 0, kw_t3: record.kw_t3 - 40 },
+      last:  { ...record, ts_getway: end.toISOString() }
+    });
+  }
+
+  try {
+    const { role, user_name } = req.user;
+    const castLookup = await runQuery(
+      role === 'admin'
+        ? `SELECT TOP 1 cast_num, ISNULL(device_id, id_user) AS hw_id FROM ${getTableName('Custumer', 'customers')} WHERE id_user = @device_id`
+        : `SELECT TOP 1 cast_num, ISNULL(device_id, id_user) AS hw_id FROM ${getTableName('Custumer', 'customers')} WHERE id_user = @device_id AND CAST(user_name AS NVARCHAR(MAX)) = @user_name`,
+      role === 'admin'
+        ? [{ name: 'device_id', type: sql.Int, value: device_id }]
+        : [{ name: 'device_id', type: sql.Int, value: device_id }, { name: 'user_name', type: sql.NVarChar, value: user_name }]
+    );
+    const cast_num = castLookup.recordset[0]?.cast_num;
+    const hw_id    = castLookup.recordset[0]?.hw_id;
+    if (!cast_num) return res.status(404).json({ error: 'Device not found' });
+
+    const customersDb = sqlConfig.customersDatabase || sqlConfig.database;
+    const tableName   = `[${customersDb}].[dbo].[cast_${cast_num}]`;
+    const fields      = `ts_getway AT TIME ZONE 'Israel Standard Time' AT TIME ZONE 'UTC' AS ts_getway, kwtot, kw_t1, kw_t2, kw_t3`;
+    const baseWhere   = `WHERE Device_ID = @hw_id AND ts_getway >= @start AND ts_getway <= @end`;
+    const params = [
+      { name: 'hw_id',  type: sql.Int,      value: hw_id },
+      { name: 'start',  type: sql.DateTime,  value: new Date(startStr) },
+      { name: 'end',    type: sql.DateTime,  value: new Date(endStr) }
+    ];
+
+    const [firstRes, lastRes] = await Promise.all([
+      runQuery(`SELECT TOP 1 ${fields} FROM ${tableName} ${baseWhere} ORDER BY ts_getway ASC`,  params),
+      runQuery(`SELECT TOP 1 ${fields} FROM ${tableName} ${baseWhere} ORDER BY ts_getway DESC`, params)
+    ]);
+
+    res.json({
+      first: firstRes.recordset[0] ?? null,
+      last:  lastRes.recordset[0]  ?? null
+    });
+  } catch (err: any) {
+    logger.error("Failed to fetch range edges", { device_id, error: err.message });
+    res.status(500).json({ error: "Failed to fetch range edges" });
   }
 });
 
