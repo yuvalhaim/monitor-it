@@ -1,6 +1,12 @@
 // ─── alertColor ───────────────────────────────────────────────────
-// green / yellow / red based on value vs thresholds
-export function alertColor(value, alertLow, alertHigh) {
+// invert=false (gauge): above alertHigh=red, below alertLow=yellow, between=green
+// invert=true  (tank/silo): below alertLow=red, between=yellow, above alertHigh=green
+export function alertColor(value, alertLow, alertHigh, invert = false) {
+  if (invert) {
+    if (value <= alertLow)  return "#f87171"; // red   – critically low
+    if (value <= alertHigh) return "#fbbf24"; // yellow – warning
+    return "#34d399";                          // green  – ok
+  }
   if (value >= alertHigh) return "#f87171"; // red
   if (value <= alertLow)  return "#fbbf24"; // yellow
   return "#34d399";                          // green

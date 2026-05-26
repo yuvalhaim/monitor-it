@@ -8,7 +8,7 @@ export default function Tank({ value, min, max, unit, alertLow, alertHigh, isDar
   const pct    = clamp((value     - min) / (max - min), 0, 1);
   const pctLow = clamp((alertLow  - min) / (max - min), 0, 1);
   const pctHi  = clamp((alertHigh - min) / (max - min), 0, 1);
-  const color  = alertColor(value, alertLow, alertHigh);
+  const color  = alertColor(value, alertLow, alertHigh, true);
 
   const labelColor = isDarkMode ? "#f1f5f9" : "#1e293b";
   const W = 100, H = 140, X = 70, Y = 20;
@@ -35,8 +35,8 @@ export default function Tank({ value, min, max, unit, alertLow, alertHigh, isDar
         <rect x={X} y={fillY+6} width={W} height={Math.max(fillH-6,0)} fill={color} fillOpacity={0.22} clipPath="url(#tankBodyClip)" />
         <line x1={X+4} y1={fillY+4} x2={X+W-4} y2={fillY+4} stroke={color} strokeWidth={1.5} strokeOpacity={0.8} style={{ filter:`drop-shadow(0 0 3px ${color})` }} />
       </>}
-      <line x1={X-8} y1={yLow} x2={X+W+8} y2={yLow} stroke="#fbbf24" strokeWidth={1} strokeDasharray="4 3" strokeOpacity={0.7} />
-      <line x1={X-8} y1={yHi}  x2={X+W+8} y2={yHi}  stroke="#f87171" strokeWidth={1} strokeDasharray="4 3" strokeOpacity={0.7} />
+      <line x1={X-8} y1={yLow} x2={X+W+8} y2={yLow} stroke="#f87171" strokeWidth={1} strokeDasharray="4 3" strokeOpacity={0.7} />
+      <line x1={X-8} y1={yHi}  x2={X+W+8} y2={yHi}  stroke="#fbbf24" strokeWidth={1} strokeDasharray="4 3" strokeOpacity={0.7} />
       {[0,25,50,75,100].map(p => {
         const ty = Y + H - H*p/100;
         return <g key={p}>

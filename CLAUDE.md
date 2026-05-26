@@ -71,7 +71,7 @@ When not specified:
 
 ```
 src/components/iot-widgets/
-├── helpers.js       – alertColor, groupByDay, fmtTime, clamp
+├── helpers.js       – alertColor(value, low, high, invert), groupByDay, fmtTime, clamp
 ├── Gauge.jsx        – arc meter (270° sweep), any unit
 ├── Tank.jsx         – rectangular vessel, fills from bottom
 ├── Silo.jsx         – cylinder + cone bottom, fills from bottom
@@ -134,8 +134,8 @@ Every `fetchData` function must return:
   unit:        string,          // "kg" | "%" | "bar" | "°C" | "m³" | "mg/L" | …
   min:         number,
   max:         number,
-  alertLow:    number,          // yellow: value <= alertLow
-  alertHigh:   number,          // red:    value >= alertHigh
+  alertLow:    number,          // gauge: yellow below / tank+silo: RED below (critical low)
+  alertHigh:   number,          // gauge: red above  / tank+silo: YELLOW below (warning)
   fetchData:   async (id) => [{ timestamp, value }]
 }
 ```
@@ -234,7 +234,7 @@ const ICON = { ..., newwidget: "🔧" };
 
 | Task | File |
 |------|------|
-| Change alert threshold colors | `helpers.js` → `alertColor()` |
+| Change alert threshold colors | `helpers.js` → `alertColor()` — pass `invert=true` for tank/silo |
 | Change table row count | `DeviceCard.jsx` → `last50` slice |
 | Add animation to tank fill | `Tank.jsx` |
 | Add export-to-CSV | `DeviceCard.jsx` |

@@ -8,7 +8,7 @@ export default function Silo({ value, min, max, unit, alertLow, alertHigh, isDar
   const pct    = clamp((value     - min) / (max - min), 0, 1);
   const pctLow = clamp((alertLow  - min) / (max - min), 0, 1);
   const pctHi  = clamp((alertHigh - min) / (max - min), 0, 1);
-  const color  = alertColor(value, alertLow, alertHigh);
+  const color  = alertColor(value, alertLow, alertHigh, true);
 
   const labelColor = isDarkMode ? "#f1f5f9" : "#1e293b";
   const cx = 120;
@@ -54,8 +54,8 @@ export default function Silo({ value, min, max, unit, alertLow, alertHigh, isDar
         <rect x={bodyX} y={bodyFillY} width={bodyW} height={bodyFillH} fill={color} fillOpacity={0.25} clipPath="url(#siloBodyClip)" />
         <line x1={bodyX+4} y1={bodyFillY} x2={bodyX+bodyW-4} y2={bodyFillY} stroke={color} strokeWidth={1.5} strokeOpacity={0.8} style={{ filter:`drop-shadow(0 0 3px ${color})` }} />
       </>}
-      <line x1={bodyX-8} y1={threshY(pctLow)} x2={bodyX+bodyW+8} y2={threshY(pctLow)} stroke="#fbbf24" strokeWidth={1} strokeDasharray="4 3" strokeOpacity={0.7} />
-      <line x1={bodyX-8} y1={threshY(pctHi)}  x2={bodyX+bodyW+8} y2={threshY(pctHi)}  stroke="#f87171" strokeWidth={1} strokeDasharray="4 3" strokeOpacity={0.7} />
+      <line x1={bodyX-8} y1={threshY(pctLow)} x2={bodyX+bodyW+8} y2={threshY(pctLow)} stroke="#f87171" strokeWidth={1} strokeDasharray="4 3" strokeOpacity={0.7} />
+      <line x1={bodyX-8} y1={threshY(pctHi)}  x2={bodyX+bodyW+8} y2={threshY(pctHi)}  stroke="#fbbf24" strokeWidth={1} strokeDasharray="4 3" strokeOpacity={0.7} />
       {[0,50,100].map(p => {
         const ty = bodyY + bodyH - bodyH*p/100;
         return <g key={p}>
