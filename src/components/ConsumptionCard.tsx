@@ -59,7 +59,7 @@ export const ConsumptionCard: React.FC<ConsumptionCardProps> = ({ data }) => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-1.5 h-1.5 rounded-full bg-orange-500" />
-            <span className="text-base md:text-sm text-[var(--muted)] font-bold">תעו"ז T1 (פסגה)</span>
+            <span className="text-base md:text-sm text-[var(--muted)] font-bold">תעו"ז T1 (שפל)</span>
           </div>
           <span className="text-sm font-bold text-[var(--foreground)] font-mono">{data.kw_t1.toLocaleString()} קוט"ש</span>
         </div>
@@ -73,7 +73,7 @@ export const ConsumptionCard: React.FC<ConsumptionCardProps> = ({ data }) => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-1.5 h-1.5 rounded-full bg-[var(--status-online)]" />
-            <span className="text-base md:text-sm text-[var(--muted)] font-bold">תעו"ז T3 (שפל)</span>
+            <span className="text-base md:text-sm text-[var(--muted)] font-bold">תעו"ז T3 (פסגה)</span>
           </div>
           <span className="text-sm font-bold text-[var(--foreground)] font-mono">{data.kw_t3.toLocaleString()} קוט"ש</span>
         </div>

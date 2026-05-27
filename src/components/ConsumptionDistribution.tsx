@@ -182,9 +182,9 @@ export const ConsumptionDistribution: React.FC<ConsumptionDistributionProps> = (
                 <Bar dataKey="total" name="סה&quot;כ צריכה" fill="var(--primary)" radius={[4, 4, 0, 0]} maxBarSize={isMobile ? 20 : 40} />
               ) : (
                 <>
-                  <Bar dataKey="t1" name="T1 פסגה" stackId="a" fill="#ef476f" radius={[0, 0, 0, 0]} maxBarSize={isMobile ? 20 : 40} />
+                  <Bar dataKey="t1" name="T1 שפל" stackId="a" fill="#ef476f" radius={[0, 0, 0, 0]} maxBarSize={isMobile ? 20 : 40} />
                   <Bar dataKey="t2" name="T2 גבע" stackId="a" fill="#ffd166" radius={[0, 0, 0, 0]} maxBarSize={isMobile ? 20 : 40} />
-                  <Bar dataKey="t3" name="T3 שפל" stackId="a" fill="#06d6a0" radius={[4, 4, 0, 0]} maxBarSize={isMobile ? 20 : 40} />
+                  <Bar dataKey="t3" name="T3 פסגה" stackId="a" fill="#06d6a0" radius={[4, 4, 0, 0]} maxBarSize={isMobile ? 20 : 40} />
                 </>
               )}
             </BarChart>

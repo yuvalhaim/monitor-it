@@ -174,13 +174,13 @@ export const EnergyCard: React.FC<EnergyCardProps> = ({ device, data, onClick })
       {/* T1/T3 Footer */}
       <div className="grid grid-cols-2 border-t border-white/5">
         <div className="p-4 text-center border-l border-white/5 bg-black/10">
-          <span className="text-base md:text-sm font-bold text-[var(--foreground)] uppercase block mb-1">פיסגה (T1)</span>
+          <span className="text-base md:text-sm font-bold text-[var(--foreground)] uppercase block mb-1">שפל (T1)</span>
           <div className="text-2xl md:text-xl font-bold font-mono text-[var(--foreground)]">
             {data?.kw_t1.toLocaleString('he-IL', { maximumFractionDigits: 1 }) || '0'} <span className="text-xs font-normal text-[var(--foreground)]">kWh</span>
           </div>
         </div>
         <div className="p-4 text-center bg-black/10">
-          <span className="text-base md:text-sm font-bold text-[var(--foreground)] uppercase block mb-1">שפל (T3)</span>
+          <span className="text-base md:text-sm font-bold text-[var(--foreground)] uppercase block mb-1">פסגה (T3)</span>
           <div className="text-2xl md:text-xl font-bold font-mono text-[var(--foreground)]">
             {data?.kw_t3.toLocaleString('he-IL', { maximumFractionDigits: 1 }) || '0'} <span className="text-xs font-normal text-[var(--foreground)]">kWh</span>
           </div>

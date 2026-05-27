@@ -168,7 +168,7 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({ devices, token, 
     const fileName = `energy_calculation_${deviceName}_${dateStr}`;
     const dateRange = `${format(new Date(result.startDate), 'dd/MM/yyyy')} - ${format(new Date(result.endDate), 'dd/MM/yyyy')}`;
 
-    const headers = ['מונה', 'זמן התחלה', 'זמן סיום', 'קריאה התחלתית', 'קריאה סופית', 'צריכה kWh', 'T1 פסגה (kWh)', 'T2 גבע (kWh)', 'T3 שפל (kWh)', 'ממוצע ליום'];
+    const headers = ['מונה', 'זמן התחלה', 'זמן סיום', 'קריאה התחלתית', 'קריאה סופית', 'צריכה kWh', 'T1 שפל (kWh)', 'T2 גבע (kWh)', 'T3 פסגה (kWh)', 'ממוצע ליום'];
     const tableData = result.isAll
       ? result.items.map((item: any) => [
           item.deviceName,
@@ -406,9 +406,9 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({ devices, token, 
                             <th className="p-4">קריאה התחלתית</th>
                             <th className="p-4">קריאה סופית</th>
                             <th className="p-4">צריכה (kWh)</th>
-                            <th className="p-4">T1 פסגה (kWh)</th>
+                            <th className="p-4">T1 שפל (kWh)</th>
                             <th className="p-4">T2 גבע (kWh)</th>
-                            <th className="p-4">T3 שפל (kWh)</th>
+                            <th className="p-4">T3 פסגה (kWh)</th>
                             <th className="p-4">ממוצע ליום</th>
                           </tr>
                         </thead>

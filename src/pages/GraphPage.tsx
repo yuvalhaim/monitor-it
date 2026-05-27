@@ -155,9 +155,9 @@ export const GraphPage: React.FC<GraphPageProps> = ({ devices, token, isDebugMod
               total += Math.max(0, (last.kwtot || 0) - (first.kwtot || 0));
             }
           });
-          dayData['T1 פסגה'] = Number(t1.toFixed(2));
+          dayData['T1 שפל'] = Number(t1.toFixed(2));
           dayData['T2 גבע'] = Number(t2.toFixed(2));
-          dayData['T3 שפל'] = Number(t3.toFixed(2));
+          dayData['T3 פסגה'] = Number(t3.toFixed(2));
           dayData.total = Number(total.toFixed(2));
         } else if (displayMode === 'raw_kwtot') {
           // Show raw kwtot value (cumulative)
@@ -599,9 +599,9 @@ export const GraphPage: React.FC<GraphPageProps> = ({ devices, token, isDebugMod
                     })()
                   ) : (
                     <>
-                      <Bar dataKey="T1 פסגה" stackId="a" fill="url(#barGradT1)" radius={[0, 0, 0, 0]} maxBarSize={56} animationDuration={700} animationEasing="ease-out" />
+                      <Bar dataKey="T1 שפל" stackId="a" fill="url(#barGradT1)" radius={[0, 0, 0, 0]} maxBarSize={56} animationDuration={700} animationEasing="ease-out" />
                       <Bar dataKey="T2 גבע"  stackId="a" fill="url(#barGradT2)" radius={[0, 0, 0, 0]} maxBarSize={56} animationDuration={700} animationEasing="ease-out" />
-                      <Bar dataKey="T3 שפל" stackId="a" fill="url(#barGradT3)" radius={[5, 5, 0, 0]} maxBarSize={56} animationDuration={700} animationEasing="ease-out" />
+                      <Bar dataKey="T3 פסגה" stackId="a" fill="url(#barGradT3)" radius={[5, 5, 0, 0]} maxBarSize={56} animationDuration={700} animationEasing="ease-out" />
                     </>
                   )}
                 </BarChart>
