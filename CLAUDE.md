@@ -509,6 +509,36 @@ Add these rules inside the page's `<style>` tag (replace `X` with the page prefi
 
 ## 4 · Project: Galoz IoT Energy Monitor
 
+### PM2 Deployment
+
+The server runs under PM2 using `ecosystem.config.cjs`.
+
+**Config** (`ecosystem.config.cjs`):
+```js
+script: "node_modules/tsx/dist/cli.mjs",
+args:   "server.ts",
+interpreter: "node",
+```
+
+**Why this pattern:** `tsx` is a local dev dependency (not globally installed). PM2's `interpreter: "npx"` / `interpreterArgs: "tsx"` does NOT work — pm2 gets 0 bytes of output and 0 memory. The correct approach mirrors what `node_modules/.bin/tsx.cmd` does internally: call `node` directly on `tsx/dist/cli.mjs`.
+
+**npm scripts** (added to `package.json`):
+```
+npm run start:prod    →  pm2 start ecosystem.config.cjs --env production
+npm run stop:prod     →  pm2 stop galoz-iot
+npm run restart:prod  →  pm2 restart galoz-iot
+npm run logs:prod     →  pm2 logs galoz-iot
+```
+
+**Startup / port conflict:** If port 3001 is already in use (e.g. a manually started `node server.ts`), pm2 will crash-loop. Find and kill the conflicting process first:
+```powershell
+netstat -ano | Select-String ":3001"   # find PID
+taskkill /PID <pid> /F
+pm2 restart galoz-iot
+```
+
+---
+
 ### Stack
 
 - **Frontend**: React + TypeScript + Tailwind CSS (Vite)
