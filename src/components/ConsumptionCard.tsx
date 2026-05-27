@@ -1,5 +1,5 @@
 import React from 'react';
-import { Activity, TrendingUp, Calendar } from 'lucide-react';
+import { Activity, TrendingUp } from 'lucide-react';
 import { EnergyData } from '../types';
 
 interface ConsumptionCardProps {
@@ -30,29 +30,6 @@ export const ConsumptionCard: React.FC<ConsumptionCardProps> = ({ data }) => {
         </div>
         <span className="text-6xl md:text-7xl font-bold text-[var(--foreground)] font-mono tracking-tighter mb-2 z-10">{data.kwtot.toLocaleString()}</span>
         <span className="text-base md:text-sm font-bold text-[var(--muted)] uppercase tracking-[0.3em] z-10">סה"כ קוט"ש</span>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div className="bg-white/5 p-4 rounded-xl border border-[var(--border)] group hover:bg-white/10 transition-colors">
-          <div className="flex items-center gap-2 mb-2">
-            <Calendar className="w-3 h-3 text-[var(--muted)]" />
-            <span className="text-sm md:text-xs font-bold text-[var(--muted)] uppercase tracking-widest">צריכה 30 יום</span>
-          </div>
-          <div className="flex items-baseline gap-1">
-            <span className="text-3xl md:text-2xl font-bold text-[var(--foreground)] font-mono">{data.kt30d.toLocaleString()}</span>
-            <span className="text-xs text-[var(--muted)] font-bold uppercase">קוט"ש</span>
-          </div>
-        </div>
-        <div className="bg-white/5 p-4 rounded-xl border border-[var(--border)] group hover:bg-white/10 transition-colors">
-          <div className="flex items-center gap-2 mb-2">
-            <Calendar className="w-3 h-3 text-[var(--muted)]" />
-            <span className="text-sm md:text-xs font-bold text-[var(--muted)] uppercase tracking-widest">צריכה 60 יום</span>
-          </div>
-          <div className="flex items-baseline gap-1">
-            <span className="text-3xl md:text-2xl font-bold text-[var(--foreground)] font-mono">{data.kt60d.toLocaleString()}</span>
-            <span className="text-xs text-[var(--muted)] font-bold uppercase">קוט"ש</span>
-          </div>
-        </div>
       </div>
 
       <div className="mt-6 pt-6 border-t border-[var(--border)] space-y-3">
