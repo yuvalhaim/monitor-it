@@ -83,8 +83,9 @@ export function WeighingPage({ token, userProfile, isDarkMode = true }: Weighing
     apiFetch("/api/weighing/devices", { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json())
       .then((data: WeighingDevice[]) => {
-        setDevices(data);
-        if (data.length > 0) setSelectedId(data[0].id_user);
+        const sorted = [...data].sort((a, b) => (a.device_id ?? 0) - (b.device_id ?? 0));
+        setDevices(sorted);
+        if (sorted.length > 0) setSelectedId(sorted[0].id_user);
         if (data.length > 1) setSummaryMode(true);
       })
       .catch(() => {});

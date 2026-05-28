@@ -75,6 +75,7 @@ export interface User {
 
 export interface WeighingDevice {
   id_user: number;
+  device_id?: number | null;
   site_name: string;
   location?: string;
   unit: string;

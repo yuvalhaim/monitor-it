@@ -1299,7 +1299,7 @@ app.get("/api/admin/recent-logins", authenticateToken, authorizeAdmin, async (re
 app.get("/api/weighing/devices", authenticateToken, async (req: any, res) => {
   try {
     const { user_name, role } = req.user;
-    let query = `SELECT id_user,
+    let query = `SELECT id_user, device_id,
                         CAST(site_name AS VARCHAR(255)) AS site_name,
                         CAST(location AS NVARCHAR(255)) AS location,
                         CAST(unit AS VARCHAR(20)) AS unit,
