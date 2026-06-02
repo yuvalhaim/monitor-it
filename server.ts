@@ -1922,9 +1922,9 @@ app.get("/api/offjer", async (req, res) => {
   try {
     const customersDb = sqlConfig.customersDatabase || sqlConfig.database;
 
-    // Fetch the first 2 OffJer devices ordered by id_user
+    // Fetch the first 3 OffJer devices ordered by id_user
     const devicesResult = await runQuery(
-      `SELECT TOP 2 id_user, ISNULL(device_id, id_user) AS hw_id, cast_num
+      `SELECT TOP 3 id_user, ISNULL(device_id, id_user) AS hw_id, cast_num
        FROM ${getTableName('Custumer', 'customers')}
        WHERE application = 'OffJer'
        ORDER BY id_user ASC`,
@@ -1947,9 +1947,10 @@ app.get("/api/offjer", async (req, res) => {
       return r.recordset[0] ?? null;
     };
 
-    const [row1, row2] = await Promise.allSettled([
+    const [row1, row2, row3] = await Promise.allSettled([
       devices[0] ? getLatest(devices[0].cast_num, devices[0].hw_id) : Promise.resolve(null),
       devices[1] ? getLatest(devices[1].cast_num, devices[1].hw_id) : Promise.resolve(null),
+      devices[2] ? getLatest(devices[2].cast_num, devices[2].hw_id) : Promise.resolve(null),
     ]);
 
     const plc1 = row1.status === 'fulfilled' && row1.value
@@ -1960,11 +1961,16 @@ app.get("/api/offjer", async (req, res) => {
       ? buildPLC("plc_02", row2.value)
       : buildOfflinePLC("plc_02");
 
+    const plc3 = row3.status === 'fulfilled' && row3.value
+      ? buildPLC("plc_03", row3.value)
+      : buildOfflinePLC("plc_03");
+
     res.json({
       device: "monitor it -by Galoz ",
       timestamp: new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Jerusalem' }).replace(' ', 'T'),
       plc_1: plc1,
       plc_2: plc2,
+      plc_3: plc3,
     });
   } catch (err: any) {
     logger.error("Failed to fetch offjer public snapshot", { error: err.message });
@@ -1973,6 +1979,7 @@ app.get("/api/offjer", async (req, res) => {
       timestamp: new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Jerusalem' }).replace(' ', 'T'),
       plc_1: buildOfflinePLC("plc_01"),
       plc_2: buildOfflinePLC("plc_02"),
+      plc_3: buildOfflinePLC("plc_03"),
     });
   }
 });

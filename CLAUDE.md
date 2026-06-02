@@ -681,23 +681,25 @@ Three MQTT columns exist in the `Custumer` table and are fully editable from Cus
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/api/offjer` | GET | Returns latest counter snapshot for 2 OffJer PLCs. No JWT required. CORS `*`. |
+| `/api/offjer` | GET | Returns latest counter snapshot for 3 OffJer PLCs. No JWT required. CORS `*`. |
 
 #### `/api/offjer` — OffJer PLC snapshot
 
 - **Auth**: none — public endpoint, accessible by external clients
 - **CORS**: `Access-Control-Allow-Origin: *` set on the route
-- **Data source**: queries `application = 'OffJer'` devices from `Custumer`, ordered by `id_user ASC`; first device → `plc_1`, second → `plc_2`
+- **Data source**: queries `TOP 3 application = 'OffJer'` devices from `Custumer`, ordered by `id_user ASC`; first → `plc_1`, second → `plc_2`, third → `plc_3`
+- **plc_3**: added 2026-06-02 — device id_user=3, cast_num=10, device_id=3 in cast_10
 - **Timestamps**: `ts` column is stored as Israel local time — returned as-is (`YYYY-MM-DDTHH:MM:SS`, no UTC conversion, no `AT TIME ZONE` in SQL). Top-level `timestamp` generated in `Asia/Jerusalem`.
 - **Counters**: always returned as numbers (`Number()`), never strings. `null` if the value is missing or the PLC is offline.
 - **Offline fallback**: if a DB query fails for a PLC, that PLC gets `"status": "offline"` and all counters set to `null`. The endpoint never returns HTTP 500 — always returns HTTP 200 with the offline structure.
 
 ```json
 {
-  "device": "galoz-energy-monitor",
+  "device": "monitor it -by Galoz ",
   "timestamp": "<Israel local ISO>",
   "plc_1": { "id": "plc_01", "status": "online", "last_update": "<local ISO>", "counters": { "counter_1": 0, ... } },
-  "plc_2": { "id": "plc_02", "status": "online", "last_update": "<local ISO>", "counters": { "counter_1": 0, ... } }
+  "plc_2": { "id": "plc_02", "status": "online", "last_update": "<local ISO>", "counters": { "counter_1": 0, ... } },
+  "plc_3": { "id": "plc_03", "status": "online", "last_update": "<local ISO>", "counters": { "counter_1": 0, ... } }
 }
 ```
 
