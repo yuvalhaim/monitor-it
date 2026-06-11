@@ -3,7 +3,8 @@ import { Tank, Silo, Gauge } from "../components/iot-widgets";
 import { PsKsDevice } from "../types";
 import { RefreshCw, Waves, Clock, TrendingUp, TrendingDown, Minus, Maximize2, X, Activity, Battery, Signal } from "lucide-react";
 import {
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Brush
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Brush,
+  BarChart, Bar
 } from "recharts";
 import { format, subDays } from "date-fns";
 import { apiFetch } from "../lib/apiFetch";
@@ -53,7 +54,10 @@ export function PsKsPage({ token, userProfile, isDarkMode = true }: PsKsPageProp
   const [error,        setError]       = useState<string | null>(null);
   const [refreshing,   setRefreshing]  = useState(false);
   const [activeRange,  setActiveRange] = useState("today");
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isFullscreen,       setIsFullscreen]     = useState(false);
+  const [dailyConsumption,   setDailyConsumption] = useState<{ day: string; consumption: number }[]>([]);
+  const [consumptionView,    setConsumptionView]  = useState<'weekly' | 'monthly'>('weekly');
+  const [fillings,           setFillings]         = useState<{ timestamp: string; Device_ID: number; fill_start: number; fill_stop: number; fill_total: number }[]>([]);
   const [customDates,  setCustomDates] = useState({
     start: format(subDays(new Date(), 7), "yyyy-MM-dd"),
     end:   format(new Date(), "yyyy-MM-dd"),
@@ -109,6 +113,26 @@ export function PsKsPage({ token, userProfile, isDarkMode = true }: PsKsPageProp
     }
   }, [token, activeRange, customDates, selectedId, buildUrl]);
 
+  const fetchDailyConsumption = useCallback(async (deviceId: number | null) => {
+    if (!token || !deviceId) return;
+    try {
+      const res = await apiFetch(`/api/psks/daily-consumption?device_id=${deviceId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) setDailyConsumption(await res.json());
+    } catch {}
+  }, [token]);
+
+  const fetchFillings = useCallback(async (deviceId: number | null) => {
+    if (!token || !deviceId) return;
+    try {
+      const res = await apiFetch(`/api/psks/fillings?device_id=${deviceId}&days=30`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) setFillings(await res.json());
+    } catch {}
+  }, [token]);
+
   useEffect(() => {
     if (selectedId) fetchData(false, activeRange, customDates, selectedId);
   }, [activeRange, customDates, selectedId]);
@@ -117,6 +141,11 @@ export function PsKsPage({ token, userProfile, isDarkMode = true }: PsKsPageProp
     const id = setInterval(() => fetchData(true, activeRange, customDates, selectedId), REFRESH_INTERVAL);
     return () => clearInterval(id);
   }, [fetchData, selectedId]);
+
+  useEffect(() => {
+    fetchDailyConsumption(selectedId);
+    fetchFillings(selectedId);
+  }, [selectedId]);
 
   const latestLevel   = readings.length > 0 ? readings[readings.length - 1].level   : null;
   const latestBattery = readings.length > 0 ? readings[readings.length - 1].battery : null;
@@ -582,7 +611,101 @@ export function PsKsPage({ token, userProfile, isDarkMode = true }: PsKsPageProp
             </div>
           </div>
 
-          {/* ── Row 4: History table ─────────────────────────────────────────── */}
+          {/* ── Row 4: Daily Consumption Bar Chart ───────────────────────────── */}
+          {(() => {
+            const days = consumptionView === 'weekly' ? 7 : 30;
+            const sorted = [...dailyConsumption].sort((a, b) => a.day.localeCompare(b.day));
+            const sliced = sorted.slice(-days);
+            const barData = sliced.map(d => ({
+              name: new Date(d.day).toLocaleDateString("he-IL", { day: "2-digit", month: "2-digit" }),
+              consumption: d.consumption,
+            }));
+            const total   = barData.reduce((s, d) => s + d.consumption, 0);
+            const peak    = Math.max(...barData.map(d => d.consumption), 0);
+            const average = barData.length > 0 ? Math.round(total / barData.length) : 0;
+            return (
+              <div style={S.card}>
+                <div style={{ padding: "14px 20px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
+                  <p style={S.sectionHdr}>צריכה יומית</p>
+                  <div style={{ display: "flex", gap: 4, background: isDarkMode ? "rgba(0,0,0,0.25)" : "rgba(0,0,0,0.06)", padding: 4, borderRadius: 10, border: `1px solid ${C.border}` }}>
+                    {(["weekly", "monthly"] as const).map(v => (
+                      <button key={v} onClick={() => setConsumptionView(v)}
+                        style={{ padding: "5px 14px", borderRadius: 7, fontSize: 13, cursor: "pointer",
+                          fontFamily: "DM Sans, sans-serif", fontWeight: 700, border: "none",
+                          background: consumptionView === v ? ACCENT : "transparent",
+                          color: consumptionView === v ? "#fff" : C.muted,
+                          transition: "all 0.15s" }}>
+                        {v === "weekly" ? "שבועי" : "חודשי"}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div style={{ padding: "12px 8px 4px", height: 260 }} dir="ltr">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={barData} margin={{ top: 8, right: 10, left: 0, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)"} vertical={false} />
+                      <XAxis dataKey="name" stroke={C.muted} fontSize={12} tickLine={false} axisLine={false} dy={6} tick={{ fill: C.muted }} />
+                      <YAxis orientation="left" stroke={C.muted} fontSize={12} tickLine={false} axisLine={false}
+                        width={1} mirror={true} dx={6} tickFormatter={v => v.toLocaleString()} tick={{ fill: C.muted }} />
+                      <Tooltip
+                        contentStyle={{ backgroundColor: C.card, border: `1px solid ${C.border}`, borderRadius: 10, fontSize: 13, textAlign: "right", color: C.text, fontFamily: "DM Sans, sans-serif" }}
+                        itemStyle={{ color: C.text }}
+                        formatter={(v: any) => [`${Number(v).toLocaleString()} ${cfg.unit}`, "צריכה"]}
+                        cursor={{ fill: isDarkMode ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)" }}
+                      />
+                      <Bar dataKey="consumption" fill={ACCENT} radius={[4, 4, 0, 0]} maxBarSize={36} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 1, borderTop: `1px solid ${C.border}` }}>
+                  {[
+                    { label: 'סה"כ',       value: total,   color: ACCENT },
+                    { label: 'יום שיא',    value: peak,    color: "#f87171" },
+                    { label: 'ממוצע יומי', value: average, color: "#34d399" },
+                  ].map(({ label, value, color }) => (
+                    <div key={label} style={{ padding: "14px 20px", textAlign: "center", borderLeft: `1px solid ${C.border}` }}>
+                      <p style={{ color: C.muted, fontSize: 11, fontFamily: "DM Sans, sans-serif", textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 4px" }}>{label}</p>
+                      <span style={{ fontFamily: "Bebas Neue, sans-serif", fontSize: 32, color }}>{value.toLocaleString()}</span>
+                      <span style={{ fontFamily: "DM Sans, sans-serif", fontSize: 13, color: C.muted, marginRight: 4 }}> {cfg.unit}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* ── Row 5: Fill events (from DB, injected by Node-RED) ────────────── */}
+          {fillings.length > 0 && (
+            <div style={S.card}>
+              <div style={{ padding: "14px 20px", borderBottom: `1px solid ${C.border}` }}>
+                <p style={S.sectionHdr}>אירועי מילוי — {fillings.length}</p>
+              </div>
+              <div style={{ overflowX: "auto", maxHeight: 340, overflowY: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14, fontFamily: "DM Sans, sans-serif" }}>
+                  <thead style={{ position: "sticky", top: 0 }}>
+                    <tr style={{ background: C.inner }}>
+                      {["#", "זמן", `לפני (${cfg.unit})`, `אחרי (${cfg.unit})`, `סה״כ מולא (${cfg.unit})`].map(h => (
+                        <th key={h} style={{ padding: "10px 20px", textAlign: "right", color: C.text, fontWeight: 600, whiteSpace: "nowrap", fontSize: 13 }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {fillings.map((f, i) => (
+                      <tr key={i} style={{ borderTop: `1px solid ${C.border}` }}>
+                        <td style={{ padding: "8px 20px", color: C.muted }}>{i + 1}</td>
+                        <td style={{ padding: "8px 20px", color: C.text, whiteSpace: "nowrap" }}>{toDate(f.timestamp).toLocaleString("he-IL")}</td>
+                        <td style={{ padding: "8px 20px", fontFamily: "Bebas Neue, sans-serif", fontSize: 20, color: C.muted }}>{f.fill_start.toLocaleString()}</td>
+                        <td style={{ padding: "8px 20px", fontFamily: "Bebas Neue, sans-serif", fontSize: 20, color: C.muted }}>{f.fill_stop.toLocaleString()}</td>
+                        <td style={{ padding: "8px 20px", fontFamily: "Bebas Neue, sans-serif", fontSize: 22, color: "#34d399" }}>+{f.fill_total.toLocaleString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* ── Row 6: History table ─────────────────────────────────────────── */}
           <div style={S.card}>
             <div style={{ padding: "14px 20px", borderBottom: `1px solid ${C.border}` }}>
               <p style={S.sectionHdr}>היסטוריה — {readings.length} קריאות</p>

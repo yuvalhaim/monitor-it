@@ -1769,6 +1769,96 @@ app.get("/api/psks/data", authenticateToken, async (req: any, res) => {
   }
 });
 
+// GET /api/psks/daily-consumption — daily level drop (consumption) per day, last 30 days
+app.get("/api/psks/daily-consumption", authenticateToken, async (req: any, res) => {
+  try {
+    const { user_name } = req.user;
+    const device_id = parseInt(req.query.device_id as string);
+    if (!device_id) return res.status(400).json({ error: 'device_id is required' });
+
+    const userResult = await runQuery(
+      `SELECT TOP 1 cast_num, ISNULL(device_id, id_user) AS hw_id FROM ${getTableName('Custumer', 'customers')}
+       WHERE CAST(user_name AS NVARCHAR(MAX)) = @user_name AND id_user = @device_id`,
+      [
+        { name: 'user_name', type: sql.NVarChar, value: user_name },
+        { name: 'device_id', type: sql.Int,      value: device_id },
+      ]
+    );
+    const cast_num = userResult.recordset[0]?.cast_num;
+    const hw_id   = userResult.recordset[0]?.hw_id ?? device_id;
+    if (!cast_num) return res.status(404).json({ error: 'No cast table configured for this device' });
+
+    const customersDb = sqlConfig.customersDatabase || sqlConfig.database;
+    const tableName = `[${customersDb}].[dbo].[cast_${cast_num}]`;
+
+    const result = await runQuery(
+      `WITH lag_data AS (
+         SELECT
+           CAST(ts AS DATE) AS day,
+           level,
+           LAG(level) OVER (PARTITION BY Device_ID ORDER BY ts) AS prev_level
+         FROM ${tableName}
+         WHERE Device_ID = @hw_id
+           AND ts >= DATEADD(day, -30, GETDATE())
+       )
+       SELECT
+         CONVERT(VARCHAR(10), day, 120) AS day,
+         SUM(CASE WHEN prev_level > level THEN prev_level - level ELSE 0 END) AS consumption
+       FROM lag_data
+       WHERE prev_level IS NOT NULL
+       GROUP BY day
+       ORDER BY day ASC`,
+      [{ name: 'hw_id', type: sql.Int, value: hw_id }]
+    );
+    res.json(result.recordset);
+  } catch (err: any) {
+    logger.error("Failed to fetch psks daily consumption", { error: err.message });
+    res.status(500).json({ error: "Failed to fetch psks daily consumption" });
+  }
+});
+
+// GET /api/psks/fillings — returns fill events (fill_total > 0) for a device
+app.get("/api/psks/fillings", authenticateToken, async (req: any, res) => {
+  try {
+    const { user_name } = req.user;
+    const device_id = parseInt(req.query.device_id as string);
+    if (!device_id) return res.status(400).json({ error: 'device_id is required' });
+
+    const userResult = await runQuery(
+      `SELECT TOP 1 cast_num, ISNULL(device_id, id_user) AS hw_id FROM ${getTableName('Custumer', 'customers')}
+       WHERE CAST(user_name AS NVARCHAR(MAX)) = @user_name AND id_user = @device_id`,
+      [
+        { name: 'user_name', type: sql.NVarChar, value: user_name },
+        { name: 'device_id', type: sql.Int,      value: device_id },
+      ]
+    );
+    const cast_num = userResult.recordset[0]?.cast_num;
+    const hw_id   = userResult.recordset[0]?.hw_id ?? device_id;
+    if (!cast_num) return res.status(404).json({ error: 'No cast table configured for this device' });
+
+    const customersDb = sqlConfig.customersDatabase || sqlConfig.database;
+    const tableName = `[${customersDb}].[dbo].[cast_${cast_num}]`;
+    const days = parseInt(req.query.days as string) || 30;
+
+    const result = await runQuery(
+      `SELECT TOP 200
+         ts AT TIME ZONE 'Israel Standard Time' AT TIME ZONE 'UTC' AS timestamp,
+         Device_ID, fill_start, fill_stop, fill_total
+       FROM ${tableName}
+       WHERE fill_total > 0 AND Device_ID = @hw_id AND ts >= DATEADD(day, -@days, GETDATE())
+       ORDER BY ts DESC`,
+      [
+        { name: 'hw_id', type: sql.Int, value: hw_id },
+        { name: 'days',  type: sql.Int, value: days },
+      ]
+    );
+    res.json(result.recordset);
+  } catch (err: any) {
+    logger.error("Failed to fetch psks fillings", { error: err.message });
+    res.status(500).json({ error: "Failed to fetch psks fillings" });
+  }
+});
+
 // ── OffJer endpoints ────────────────────────────────────────────────────────────
 
 // GET /api/ofjer/devices — returns all OffJer devices for the logged-in user

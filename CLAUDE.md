@@ -674,6 +674,7 @@ Three MQTT columns exist in the `Custumer` table and are fully editable from Cus
 | `/alerts` | `Alerts` | All users | |
 | `/customers` | `CustomersPage` | **Admin only** | `role === 'admin'` guard in `App.tsx` |
 | `/ocio` | `OcioPage` | All users | Level/volume monitoring; auto-redirect target for `application === 'Ocio'` |
+| `/level/ps_ks` | `PsKsPage` | All users | PS-KS ultrasonic level sensor; auto-redirect target for `application === 'Level_PsKs'` |
 | `/iot-test` | `IoTWidgetsTestPage` | All users | |
 | `*` | — | — | Catch-all redirects to `/` |
 
@@ -704,6 +705,51 @@ Three MQTT columns exist in the `Custumer` table and are fully editable from Cus
 ```
 
 > **Do NOT add auth to this endpoint** — it is intentionally public and called by external systems.
+
+### PS-KS Level Sensor Page (`/level/ps_ks`)
+
+**Application type**: `Level_PsKs` in `Custumer` table. Redirected to automatically on login.
+
+**Component**: `src/pages/PsKsPage.tsx`
+
+#### Cast Table Schema — PS-KS
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `Row_Num` | INT PK | auto-increment |
+| `Device_ID` | INT NULL | hardware device ID |
+| `ts` | DATETIME NULL | stored as Israel local time |
+| `level` | FLOAT NULL | ultrasonic level reading |
+| `battery` | FLOAT NULL | solar panel battery voltage (V) |
+| `signal` | TINYINT NULL | signal quality 0–31 |
+| `interrupt` | TINYINT NULL | 0 = normal, 1 = interrupt event |
+| `fill_start` | INT DEFAULT 0 | level at fill begin — 0 = not a fill row |
+| `fill_stop` | INT DEFAULT 0 | level at fill end — 0 = not a fill row |
+| `fill_total` | INT DEFAULT 0 | total rise — 0 = normal reading row |
+
+**Normal reading rows**: `fill_total = 0` (level, battery, signal, interrupt are populated).
+**Fill event rows**: `fill_total > 0` (fill_start, fill_stop, fill_total populated; injected by Node-RED when a fill cycle is detected).
+
+#### API Endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/psks/devices` | All PsKs devices for the logged-in user |
+| `GET /api/psks/data` | Level readings (level, battery, signal, interrupt); supports `days`, `start`/`end`, or latest 50 |
+| `GET /api/psks/daily-consumption` | Daily level drop per day, last 30 days (LAG query on `level` drops, `fill_total = 0` rows only) |
+| `GET /api/psks/fillings` | Fill events (`fill_total > 0`), last 30 days by default; supports `?days=N` |
+
+#### Page Features (added 2026-06-11)
+
+- **צריכה יומית bar chart** — שבועי (7 days) / חודשי (30 days) toggle; summary row with סה"כ / יום שיא / ממוצע יומי
+- **אירועי מילוי table** — filled from DB via `/api/psks/fillings`; Node-RED detects fill cycles and inserts rows with `fill_total > 0`. **Do NOT compute fillings client-side** — the source of truth is the DB.
+- **גרף מפלס** (level area chart) — shown when `Display_Graph = true`; same range selector pattern as other pages
+- **מתח סוללה chart** — always visible; tracks solar panel health with 3.2V / 3.0V reference lines
+- **History table** — level, battery (V), signal (%), interrupt status
+
+#### `ts` timezone note
+
+`ts` is stored as Israel local time. The `/api/psks/data` endpoint converts via `AT TIME ZONE 'Israel Standard Time' AT TIME ZONE 'UTC'` so the frontend always receives UTC-normalised ISO strings.
 
 ### Auth & Security
 
