@@ -4,7 +4,6 @@ import {
   Droplets,
   Waves,
   Scale,
-  Bell,
   Calculator,
   BarChart3,
   Monitor,
@@ -139,7 +138,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
     ...(isOffJer ? [
       { label: 'מוני ספירה', icon: Hash, path: '/custom/offjer' },
     ] : []),
-    { label: 'התראות', icon: Bell, path: '/alerts' },
   ];
 
   return (

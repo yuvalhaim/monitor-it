@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import { Sidebar } from "./components/Sidebar";
 import { Navbar } from "./components/Navbar";
 import { Dashboard } from "./pages/Dashboard";
-import { Alerts } from "./pages/Alerts";
 import { Login } from "./pages/Login";
 import { GraphPage } from "./pages/GraphPage";
 import { CalculatorPage } from "./pages/CalculatorPage";
@@ -16,7 +15,7 @@ import { HaifaPage } from "./pages/HaifaPage";
 import { OffJerPage } from "./pages/OffJerPage";
 import { AdminOverviewPage } from "./pages/AdminOverviewPage";
 import { IoTWidgetsTestPage } from "./pages/IoTWidgetsTestPage";
-import { Device, AlertConfig, AlertHistory, User, EnergyData, WeighingDevice, OcioDevice, LevelDevice, PsKsDevice, OffJerDevice } from "./types";
+import { Device, User, EnergyData, WeighingDevice, OcioDevice, LevelDevice, PsKsDevice, OffJerDevice } from "./types";
 import { cn } from "./lib/utils";
 import { setUnauthorizedHandler } from "./lib/apiFetch";
 
@@ -33,11 +32,6 @@ export default function App() {
   });
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('token'));
   const [userProfile, setUserProfile] = useState<any>(null);
-  const [alertsConfig, setAlertsConfig] = useState<AlertConfig>({
-    smtp: { from: "", password: "", recipients: "" },
-    rules: []
-  });
-  const [alertsHistory, setAlertsHistory] = useState<AlertHistory[]>([]);
   const [allLatestData, setAllLatestData] = useState<Record<number, EnergyData>>({});
   const [weighingDevices, setWeighingDevices] = useState<WeighingDevice[]>([]);
   const [selectedWeighingId, setSelectedWeighingId] = useState<number | null>(null);
@@ -166,32 +160,6 @@ export default function App() {
     }
   };
 
-  const fetchAlertsConfig = async () => {
-    if (!token) return;
-    try {
-      const res = await fetch("/api/alerts/config", {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
-      setAlertsConfig(data);
-    } catch (err) {
-      console.error("Error fetching alerts config:", err);
-    }
-  };
-
-  const fetchAlertsHistory = async () => {
-    if (!token) return;
-    try {
-      const res = await fetch("/api/alerts/history", {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
-      setAlertsHistory(data);
-    } catch (err) {
-      console.error("Error fetching alerts history:", err);
-    }
-  };
-
   const fetchUserProfile = async () => {
     if (!token) return;
     try {
@@ -219,8 +187,6 @@ export default function App() {
       fetchLevelDevices();
       fetchPsKsDevices();
       fetchOffJerDevices();
-      fetchAlertsConfig();
-      fetchAlertsHistory();
       fetchUserProfile();
     } else {
       setLoading(false);
@@ -228,10 +194,9 @@ export default function App() {
 
     const interval = setInterval(() => {
       if (user) {
-        fetchAlertsHistory();
         fetchAllLatestData(devices);
       }
-    }, 120000); // Refresh history every 120s
+    }, 120000);
 
     return () => clearInterval(interval);
   }, [user]);
@@ -262,43 +227,6 @@ export default function App() {
     }
   };
 
-  const handleSaveAlertsConfig = async (config: AlertConfig) => {
-    if (!token) return false;
-    try {
-      const res = await fetch("/api/alerts/config", {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify(config)
-      });
-      if (res.ok) {
-        setAlertsConfig(config);
-        return true;
-      }
-    } catch (err) {
-      console.error("Failed to save alerts config", err);
-    }
-    return false;
-  };
-
-  const handleTestEmail = async (smtp: any) => {
-    if (!token) return;
-    try {
-      const res = await fetch("/api/alerts/test", {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify(smtp)
-      });
-      return await res.json();
-    } catch (err: any) {
-      return { success: false, message: err.message };
-    }
-  };
 
   const toggleTheme = () => {
     setIsDarkMode(!isDarkMode);
@@ -493,15 +421,7 @@ export default function App() {
               {user.role === 'admin' && (
                 <Route path="/overview" element={<AdminOverviewPage token={token} isDarkMode={isDarkMode} />} />
               )}
-              <Route path="/alerts" element={
-                <Alerts
-                  devices={devices}
-                  token={token}
-                  config={alertsConfig}
-                  history={alertsHistory}
-                  onSaveConfig={handleSaveAlertsConfig}
-                />
-              } />
+
               <Route path="/iot-test" element={<IoTWidgetsTestPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

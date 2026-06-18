@@ -671,7 +671,6 @@ Three MQTT columns exist in the `Custumer` table and are fully editable from Cus
 | `/weighing` | `WeighingPage` | All users | |
 | `/graph` | `GraphPage` | All users | |
 | `/calculator` | `CalculatorPage` | All users | |
-| `/alerts` | `Alerts` | All users | |
 | `/customers` | `CustomersPage` | **Admin only** | `role === 'admin'` guard in `App.tsx` |
 | `/ocio` | `OcioPage` | All users | Level/volume monitoring; auto-redirect target for `application === 'Ocio'` |
 | `/level/ps_ks` | `PsKsPage` | All users | PS-KS ultrasonic level sensor; auto-redirect target for `application === 'Level_PsKs'` |
