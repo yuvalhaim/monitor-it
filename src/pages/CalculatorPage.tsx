@@ -60,14 +60,14 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({ devices, token, 
     const { first: firstRecord, last: lastRecord } = await res.json();
 
     if (!firstRecord || !lastRecord) return null;
-    if (firstRecord.ts_getway === lastRecord.ts_getway) return null;
+    if (firstRecord.ts === lastRecord.ts) return null;
 
     const consumption = lastRecord.kwtot - firstRecord.kwtot;
-    const days = Math.max(0.1, (new Date(lastRecord.ts_getway).getTime() - new Date(firstRecord.ts_getway).getTime()) / (1000 * 60 * 60 * 24));
+    const days = Math.max(0.1, (new Date(lastRecord.ts).getTime() - new Date(firstRecord.ts).getTime()) / (1000 * 60 * 60 * 24));
 
-    const t1 = Math.max(0, (lastRecord.kw_t1 ?? 0) - (firstRecord.kw_t1 ?? 0));
-    const t2 = Math.max(0, (lastRecord.kw_t2 ?? 0) - (firstRecord.kw_t2 ?? 0));
-    const t3 = Math.max(0, (lastRecord.kw_t3 ?? 0) - (firstRecord.kw_t3 ?? 0));
+    const t1 = Math.max(0, (lastRecord.t1 ?? 0) - (firstRecord.t1 ?? 0));
+    const t2 = Math.max(0, (lastRecord.t2 ?? 0) - (firstRecord.t2 ?? 0));
+    const t3 = Math.max(0, (lastRecord.t3 ?? 0) - (firstRecord.t3 ?? 0));
 
     return {
       deviceId,
@@ -79,8 +79,8 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({ devices, token, 
       days,
       startVal: firstRecord.kwtot,
       endVal: lastRecord.kwtot,
-      startDate: firstRecord.ts_getway,
-      endDate: lastRecord.ts_getway
+      startDate: firstRecord.ts,
+      endDate: lastRecord.ts
     };
   };
 
@@ -124,12 +124,12 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({ devices, token, 
               if (!res.ok) return [];
               const data = await res.json();
               return data.filter((item: any) => {
-                const ts = new Date(item.ts_getway);
+                const ts = new Date(item.ts);
                 return ts >= start && ts <= end;
               }).map((item: any) => ({ ...item, site_name: d.site_name }));
             })
           );
-          setRawHistory(allHistory.flat().sort((a, b) => new Date(b.ts_getway).getTime() - new Date(a.ts_getway).getTime()));
+          setRawHistory(allHistory.flat().sort((a, b) => new Date(b.ts).getTime() - new Date(a.ts).getTime()));
         }
       } else {
         const res = await calculateForDevice(selectedDeviceId, token, start, end);
@@ -145,10 +145,10 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({ devices, token, 
           if (histRes.ok) {
             const data = await histRes.json();
             const filtered = data.filter((item: any) => {
-              const ts = new Date(item.ts_getway);
+              const ts = new Date(item.ts);
               return ts >= start && ts <= end;
             }).map((item: any) => ({ ...item, site_name: devices.find(d => d.id_user === selectedDeviceId)?.site_name }));
-            setRawHistory(filtered.sort((a: any, b: any) => new Date(b.ts_getway).getTime() - new Date(a.ts_getway).getTime()));
+            setRawHistory(filtered.sort((a: any, b: any) => new Date(b.ts).getTime() - new Date(a.ts).getTime()));
           }
         }
       }
@@ -491,7 +491,7 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({ devices, token, 
                         {rawHistory.filter(item => 
                           item.site_name.toLowerCase().includes(rawSearch.toLowerCase()) ||
                           item.kwtot.toString().includes(rawSearch) ||
-                          new Date(item.ts_getway).toLocaleString('he-IL').includes(rawSearch)
+                          new Date(item.ts).toLocaleString('he-IL').includes(rawSearch)
                         ).length} רשומות
                       </span>
                     </div>
@@ -512,12 +512,12 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({ devices, token, 
                           .filter(item => 
                             item.site_name.toLowerCase().includes(rawSearch.toLowerCase()) ||
                             item.kwtot.toString().includes(rawSearch) ||
-                            new Date(item.ts_getway).toLocaleString('he-IL').includes(rawSearch)
+                            new Date(item.ts).toLocaleString('he-IL').includes(rawSearch)
                           )
                           .map((item, idx) => (
                           <tr key={idx} className="border-b border-[var(--border)] hover:bg-white/5 transition-colors">
                             <td className="p-4 text-base md:text-sm text-[var(--muted)] font-mono">
-                              {new Date(item.ts_getway).toLocaleString('he-IL')}
+                              {new Date(item.ts).toLocaleString('he-IL')}
                             </td>
                             <td className="p-4 text-base md:text-sm font-bold text-[var(--foreground)]">{item.site_name}</td>
                             <td className="p-4 text-base md:text-sm font-bold text-[var(--primary)] font-mono">

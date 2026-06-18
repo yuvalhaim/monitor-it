@@ -80,7 +80,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const getDeviceStatusColor = (deviceId: number) => {
     const data = allLatestData[String(deviceId)];
     if (!data) return { bg: 'bg-[var(--status-offline)]', glow: 'var(--status-offline)' };
-    const diffMinutes = (Date.now() - new Date(data.ts_getway).getTime()) / (1000 * 60);
+    const diffMinutes = (Date.now() - new Date(data.ts).getTime()) / (1000 * 60);
     if (diffMinutes < 5)  return { bg: 'bg-[var(--status-online)]',  glow: 'var(--status-online)' };
     if (diffMinutes < 30) return { bg: 'bg-[var(--status-warning)]', glow: 'var(--status-warning)' };
     return { bg: 'bg-[var(--status-offline)]', glow: 'var(--status-offline)' };

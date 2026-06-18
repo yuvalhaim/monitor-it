@@ -700,8 +700,27 @@ export function CustomersPage({ token }: CustomersPageProps) {
                   </Field>
                 </div>
 
+                {/* Energy: max current setting */}
+                {formData.application === 'Energy' && (
+                  <div className="border-t border-[var(--border)] pt-4">
+                    <p className="text-xs font-semibold text-[var(--muted)] uppercase tracking-widest mb-3">הגדרות אנרגיה</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <Field label="זרם מקסימלי — A (max current)">
+                        <input
+                          type="number"
+                          className={inputCls}
+                          placeholder="לדוגמה: 65"
+                          value={formData.max ?? ''}
+                          onWheel={e => e.currentTarget.blur()}
+                          onChange={e => setFormData(p => ({ ...p, max: e.target.value !== '' ? parseFloat(e.target.value) : null }))}
+                        />
+                      </Field>
+                    </div>
+                  </div>
+                )}
+
                 {/* Sensor config — only for non-energy applications */}
-                {formData.application !== 'energy' && (
+                {formData.application !== 'Energy' && (
                   <>
                     <div className="border-t border-[var(--border)] pt-4">
                       <p className="text-xs font-semibold text-[var(--muted)] uppercase tracking-widest mb-3">הגדרות חיישן</p>

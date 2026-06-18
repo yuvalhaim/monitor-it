@@ -9,6 +9,8 @@ interface ConsumptionCardProps {
 export const ConsumptionCard: React.FC<ConsumptionCardProps> = ({ data }) => {
   if (!data) return null;
 
+  const isSinglePhase = data.meter_type === 'EM511';
+
   return (
     <div className="bg-[var(--card)] rounded-2xl p-4 md:p-6 h-full shadow-lg border border-[var(--border)]">
       <div className="flex items-center justify-between mb-4 md:mb-8">
@@ -32,29 +34,31 @@ export const ConsumptionCard: React.FC<ConsumptionCardProps> = ({ data }) => {
         <span className="text-base md:text-sm font-bold text-[var(--muted)] uppercase tracking-[0.3em] z-10">סה"כ קוט"ש</span>
       </div>
 
-      <div className="mt-6 pt-6 border-t border-[var(--border)] space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-1.5 h-1.5 rounded-full bg-orange-500" />
-            <span className="text-base md:text-sm text-[var(--muted)] font-bold">תעו"ז T1 (שפל)</span>
+      {!isSinglePhase && (
+        <div className="mt-6 pt-6 border-t border-[var(--border)] space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-orange-500" />
+              <span className="text-base md:text-sm text-[var(--muted)] font-bold">תעו"ז T1 (שפל)</span>
+            </div>
+            <span className="text-sm font-bold text-[var(--foreground)] font-mono">{data.t1?.toLocaleString()} קוט"ש</span>
           </div>
-          <span className="text-sm font-bold text-[var(--foreground)] font-mono">{data.kw_t1.toLocaleString()} קוט"ש</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-            <span className="text-base md:text-sm text-[var(--muted)] font-bold">תעו"ז T2 (גבע)</span>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+              <span className="text-base md:text-sm text-[var(--muted)] font-bold">תעו"ז T2 (גבע)</span>
+            </div>
+            <span className="text-sm font-bold text-[var(--foreground)] font-mono">{data.t2?.toLocaleString()} קוט"ש</span>
           </div>
-          <span className="text-sm font-bold text-[var(--foreground)] font-mono">{data.kw_t2.toLocaleString()} קוט"ש</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-1.5 h-1.5 rounded-full bg-[var(--status-online)]" />
-            <span className="text-base md:text-sm text-[var(--muted)] font-bold">תעו"ז T3 (פסגה)</span>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-[var(--status-online)]" />
+              <span className="text-base md:text-sm text-[var(--muted)] font-bold">תעו"ז T3 (פסגה)</span>
+            </div>
+            <span className="text-sm font-bold text-[var(--foreground)] font-mono">{data.t3?.toLocaleString()} קוט"ש</span>
           </div>
-          <span className="text-sm font-bold text-[var(--foreground)] font-mono">{data.kw_t3.toLocaleString()} קוט"ש</span>
         </div>
-      </div>
+      )}
     </div>
   );
 };

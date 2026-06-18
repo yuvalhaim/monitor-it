@@ -144,14 +144,14 @@ export const GraphPage: React.FC<GraphPageProps> = ({ devices, token, isDebugMod
           // Tariff breakdown (summed across selected devices)
           let t1 = 0, t2 = 0, t3 = 0, total = 0;
           results.forEach(res => {
-            const dayRecords = res.data.filter((d: any) => d.ts_getway && isSameDayCustom(new Date(d.ts_getway), day));
+            const dayRecords = res.data.filter((d: any) => d.ts && isSameDayCustom(new Date(d.ts), day));
             if (dayRecords.length >= 2) {
-              const sorted = dayRecords.sort((a: any, b: any) => new Date(a.ts_getway).getTime() - new Date(b.ts_getway).getTime());
+              const sorted = dayRecords.sort((a: any, b: any) => new Date(a.ts).getTime() - new Date(b.ts).getTime());
               const first = sorted[0];
               const last = sorted[sorted.length - 1];
-              t1 += Math.max(0, (last.kw_t1 || 0) - (first.kw_t1 || 0));
-              t2 += Math.max(0, (last.kw_t2 || 0) - (first.kw_t2 || 0));
-              t3 += Math.max(0, (last.kw_t3 || 0) - (first.kw_t3 || 0));
+              t1 += Math.max(0, (last.t1 || 0) - (first.t1 || 0));
+              t2 += Math.max(0, (last.t2 || 0) - (first.t2 || 0));
+              t3 += Math.max(0, (last.t3 || 0) - (first.t3 || 0));
               total += Math.max(0, (last.kwtot || 0) - (first.kwtot || 0));
             }
           });
@@ -162,9 +162,9 @@ export const GraphPage: React.FC<GraphPageProps> = ({ devices, token, isDebugMod
         } else if (displayMode === 'raw_kwtot') {
           // Show raw kwtot value (cumulative)
           results.forEach((res) => {
-            const dayRecords = res.data.filter((d: any) => d.ts_getway && isSameDayCustom(new Date(d.ts_getway), day));
+            const dayRecords = res.data.filter((d: any) => d.ts && isSameDayCustom(new Date(d.ts), day));
             if (dayRecords.length > 0) {
-              const last = dayRecords.sort((a: any, b: any) => new Date(b.ts_getway).getTime() - new Date(a.ts_getway).getTime())[0];
+              const last = dayRecords.sort((a: any, b: any) => new Date(b.ts).getTime() - new Date(a.ts).getTime())[0];
               dayData[`device_${res.deviceId}`] = last.kwtot;
             } else {
               dayData[`device_${res.deviceId}`] = null;
@@ -174,9 +174,9 @@ export const GraphPage: React.FC<GraphPageProps> = ({ devices, token, isDebugMod
           // Cumulative consumption (delta per day)
           let dayTotal = 0;
           results.forEach((res) => {
-            const dayRecords = res.data.filter((d: any) => d.ts_getway && isSameDayCustom(new Date(d.ts_getway), day));
+            const dayRecords = res.data.filter((d: any) => d.ts && isSameDayCustom(new Date(d.ts), day));
             if (dayRecords.length >= 2) {
-              const sorted = dayRecords.sort((a: any, b: any) => new Date(a.ts_getway).getTime() - new Date(b.ts_getway).getTime());
+              const sorted = dayRecords.sort((a: any, b: any) => new Date(a.ts).getTime() - new Date(b.ts).getTime());
               const first = sorted[0];
               const last = sorted[sorted.length - 1];
               const delta = Math.max(0, last.kwtot - first.kwtot);

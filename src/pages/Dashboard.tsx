@@ -72,17 +72,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, selectedDevice, dev
           const endOfYesterday = new Date(yesterday.setHours(23, 59, 59, 999)).getTime();
           
           data = data.filter((d: EnergyData) => {
-            if (!d || !d.ts_getway) return false;
-            const ts = new Date(d.ts_getway).getTime();
+            if (!d || !d.ts) return false;
+            const ts = new Date(d.ts).getTime();
             return ts >= startOfYesterday && ts <= endOfYesterday;
           });
         } else if (range === 'custom' && customStart && customEnd) {
           const startTs = customStart.getTime();
           const endTs = customEnd.getTime();
-          
+
           data = data.filter((d: EnergyData) => {
-            if (!d || !d.ts_getway) return false;
-            const ts = new Date(d.ts_getway).getTime();
+            if (!d || !d.ts) return false;
+            const ts = new Date(d.ts).getTime();
             return ts >= startTs && ts <= endTs;
           });
         }
@@ -173,11 +173,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, selectedDevice, dev
     }
   }, [chartRange, selectedDevice, fetchChartData]);
 
-  const getStatusColor = (rssi: number) => {
-    if (rssi > -60) return 'text-[var(--status-online)]';
-    if (rssi > -80) return 'text-[var(--status-warning)]';
-    return 'text-[var(--status-offline)]';
-  };
 
   return (
     <div className="flex-1 overflow-y-auto bg-[var(--background)] p-4 md:p-8">
@@ -238,7 +233,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, selectedDevice, dev
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* 1. Live Data */}
             <div className="space-y-6">
-              <StatusCard data={latestData} getStatusColor={getStatusColor} />
+              <StatusCard data={latestData} />
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <VoltageCard data={latestData} />
                 <ConsumptionCard data={latestData} />
@@ -255,9 +250,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, selectedDevice, dev
             <ConsumptionDistribution data={distributionData} />
             
             {/* 4. History Table */}
-            <HistoryTable 
-              data={historyData} 
+            <HistoryTable
+              data={historyData}
               deviceName={selectedDevice.site_name}
+              deviceId={selectedDevice.id_user}
             />
           </div>
         ) : devices.length > 0 ? (

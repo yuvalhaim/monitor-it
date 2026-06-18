@@ -14,9 +14,7 @@ export interface Device {
 export interface EnergyData {
   Row_Num: number;
   Device_ID: number;
-  type: number;
-  fv: number;
-  rssi: number;
+  meter_type: string | null;
   vl1n: number;
   vl2n: number;
   vl3n: number;
@@ -24,13 +22,11 @@ export interface EnergyData {
   AL2: number;
   AL3: number;
   kwtot: number;
-  kt30d: number;
-  kt60d: number;
-  ts_getway: string;
+  ts: string;
   ts_em: string;
-  kw_t1: number;
-  kw_t2: number;
-  kw_t3: number;
+  t1: number;
+  t2: number;
+  t3: number;
 }
 
 export interface AlertConfig {

@@ -21,6 +21,36 @@ const drawText = (doc: jsPDF, text: string, x: number, y: number, options?: any)
   doc.text(text, x, y, options);
 };
 
+// Convert a mixed RTL/LTR string to visual LTR order for jsPDF (no setR2L).
+// Hebrew runs are reversed internally; LTR runs kept as-is; run order is reversed.
+// e.g. "\u05E6\u05E8\u05D9\u05DB\u05D4 (kWh)" \u2192 "(kWh) \u05D4\u05DB\u05D9\u05E8\u05E6" \u2192 renders as "\u05E6\u05E8\u05D9\u05DB\u05D4 (kWh)" when read R\u2192L.
+const toVisualLTR = (text: string): string => {
+  if (!isHebrew(text)) return text;
+
+  // Split into alternating Hebrew / non-Hebrew segments (spaces attach to preceding run)
+  const segs: Array<{ t: string; heb: boolean }> = [];
+  for (const ch of text) {
+    const heb = /[\u0590-\u05FF]/.test(ch);
+    const neutral = ch === ' ';
+    if (segs.length === 0) {
+      segs.push({ t: ch, heb: neutral ? true : heb }); // space \u2192 join next
+    } else {
+      const last = segs[segs.length - 1];
+      if (neutral || heb === last.heb) {
+        last.t += ch;
+      } else {
+        segs.push({ t: ch, heb });
+      }
+    }
+  }
+
+  return segs
+    .reverse()
+    .map(s => s.heb ? s.t.split('').reverse().join('') : s.t.trim())
+    .join(' ')
+    .trim();
+};
+
 export const exportToCSV = (data: any[], headers: string[], fileName: string) => {
   const csvContent = [
     headers.join(','),
@@ -116,21 +146,17 @@ export const exportToPDF = async (
 
   if (tableData && tableData.length > 0) {
     autoTable(doc, {
-      head: [headers],
+      head: [headers.map(toVisualLTR)],
       body: tableData,
       startY: currentY,
       styles: { font: 'Rubik', halign: 'right', fontSize: 9 },
       headStyles: { font: 'Rubik', fillColor: [0, 119, 182], textColor: 255, fontStyle: 'normal' },
       theme: 'grid',
       didParseCell: (data: any) => {
-        const text = String(data.cell.raw || '');
-        if (isHebrew(text)) {
-          data.cell.styles.font = 'Rubik';
-        }
+        data.cell.styles.font = 'Rubik';
       },
-      willDrawCell: (data: any) => {
-        const text = String(data.cell.raw || '');
-        doc.setR2L(isHebrew(text));
+      willDrawCell: () => {
+        doc.setR2L(false);
       }
     });
   }

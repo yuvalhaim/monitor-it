@@ -807,9 +807,9 @@ app.post("/api/customers", authenticateToken, authorizeAdmin, async (req: any, r
     }
     await runQuery(`
         INSERT INTO ${getTableName('Custumer', 'customers')}
-          (id_user, user_name, site_name, location, contact_name, mobile_phone, email, date_exp, Alerts, application, password, role, cast_num, unit, min, max, alert_low, alert_high, widget_type, Display_Graph, pub_topic, sub_topic, mqtt_client_id)
+          (id_user, user_name, site_name, location, contact_name, mobile_phone, email, date_exp, Alerts, application, password, role, cast_num, device_id, unit, min, max, alert_low, alert_high, widget_type, Display_Graph, pub_topic, sub_topic, mqtt_client_id)
         VALUES
-          (@id_user, @user_name, @site_name, @location, @contact_name, @mobile_phone, @email, @date_exp, @Alerts, @application, @password, @role, @cast_num, @unit, @min, @max, @alert_low, @alert_high, @widget_type, @Display_Graph, @pub_topic, @sub_topic, @mqtt_client_id)
+          (@id_user, @user_name, @site_name, @location, @contact_name, @mobile_phone, @email, @date_exp, @Alerts, @application, @password, @role, @cast_num, @device_id, @unit, @min, @max, @alert_low, @alert_high, @widget_type, @Display_Graph, @pub_topic, @sub_topic, @mqtt_client_id)
       `, [
       { name: "id_user",        type: sql.Int,      value: nextId },
       { name: "user_name",      type: sql.NVarChar, value: customer.user_name },
@@ -820,10 +820,11 @@ app.post("/api/customers", authenticateToken, authorizeAdmin, async (req: any, r
       { name: "email",          type: sql.NVarChar, value: customer.email },
       { name: "date_exp",       type: sql.Date,     value: customer.date_exp || null },
       { name: "Alerts",         type: sql.Bit,      value: customer.Alerts ? 1 : 0 },
-      { name: "application",    type: sql.NVarChar, value: customer.application || 'energy' },
+      { name: "application",    type: sql.NVarChar, value: customer.application || 'Energy' },
       { name: "password",       type: sql.NVarChar, value: hashedPassword },
       { name: "role",           type: sql.NVarChar, value: customer.role || 'user' },
       { name: "cast_num",       type: sql.Int,      value: customer.cast_num || null },
+      { name: "device_id",      type: sql.Int,      value: customer.device_id != null ? parseInt(customer.device_id) : null },
       { name: "unit",           type: sql.NVarChar, value: customer.unit || null },
       { name: "min",            type: sql.Float,    value: customer.min ?? null },
       { name: "max",            type: sql.Float,    value: customer.max ?? null },
@@ -2246,6 +2247,46 @@ app.get("/api/haifa/history", authenticateToken, async (req: any, res) => {
   }
 });
 
+// ── Energy schema helpers ────────────────────────────────────────────────────
+// cast tables come in two schemas:
+//   old: ts_getway, kw_t1/t2/t3, fv, rssi, type, kt30d, kt60d
+//   new: ts, t1/t2/t3, meter_type  (cast_15+)
+// We detect once per cast_num and cache the result.
+const castSchemaCache = new Map<number, 'new' | 'old'>();
+
+async function detectCastSchema(castNum: number, customersDb: string): Promise<'new' | 'old'> {
+  if (castSchemaCache.has(castNum)) return castSchemaCache.get(castNum)!;
+  const r = await runQuery(
+    `SELECT COUNT(*) AS cnt FROM [${customersDb}].INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = 'dbo' AND TABLE_NAME = @tbl AND COLUMN_NAME = 'ts'`,
+    [{ name: 'tbl', type: sql.NVarChar, value: `cast_${castNum}` }]
+  );
+  const schema: 'new' | 'old' = r.recordset[0].cnt > 0 ? 'new' : 'old';
+  castSchemaCache.set(castNum, schema);
+  return schema;
+}
+
+function getEnergyFields(schema: 'new' | 'old'): string {
+  return schema === 'new'
+    ? [
+        "Device_ID", "meter_type",
+        "vl1n", "vl2n", "vl3n", "AL1", "AL2", "AL3", "kwtot",
+        "ts    AT TIME ZONE 'Israel Standard Time' AT TIME ZONE 'UTC' AS ts",
+        "ts_em AT TIME ZONE 'Israel Standard Time' AT TIME ZONE 'UTC' AS ts_em",
+        "t1", "t2", "t3"
+      ].join(", ")
+    : [
+        "Device_ID", "NULL AS meter_type",
+        "vl1n", "vl2n", "vl3n", "AL1", "AL2", "AL3", "kwtot",
+        "ts_getway AT TIME ZONE 'Israel Standard Time' AT TIME ZONE 'UTC' AS ts",
+        "ts_em     AT TIME ZONE 'Israel Standard Time' AT TIME ZONE 'UTC' AS ts_em",
+        "kw_t1 AS t1", "kw_t2 AS t2", "kw_t3 AS t3"
+      ].join(", ");
+}
+
+function getTsCol(schema: 'new' | 'old') { return schema === 'new' ? 'ts' : 'ts_getway'; }
+// ────────────────────────────────────────────────────────────────────────────
+
 // GET /api/energy/latest/all — returns latest record for every device the caller can see (single DB round-trip)
 app.get("/api/energy/latest/all", authenticateToken, energyLimiter, energySustainedLimiter, async (req: any, res) => {
   const { role, user_name } = req.user;
@@ -2293,26 +2334,20 @@ app.get("/api/energy/latest/all", authenticateToken, energyLimiter, energySustai
       hwToIdUser[r.hw_id] = r.id_user;
     });
 
-    const fields = [
-      "ROW_NUMBER() OVER (ORDER BY ts_getway DESC) AS Row_Num", "Device_ID", "type", "fv", "rssi",
-      "vl1n", "vl2n", "vl3n", "AL1", "AL2", "AL3",
-      "kwtot", "kt30d", "kt60d",
-      "ts_getway AT TIME ZONE 'Israel Standard Time' AT TIME ZONE 'UTC' AS ts_getway",
-      "ts_em AT TIME ZONE 'Israel Standard Time' AT TIME ZONE 'UTC' AS ts_em",
-      "kw_t1", "kw_t2", "kw_t3"
-    ].join(", ");
-
     // Step 3: query each cast table and merge results, keyed by id_user (what the frontend expects)
     const customersDb = sqlConfig.customersDatabase || sqlConfig.database;
     const result: Record<number, any> = {};
     for (const [castNum, hwIds] of Object.entries(byCast)) {
+      const schema = await detectCastSchema(Number(castNum), customersDb);
+      const fields = getEnergyFields(schema);
+      const tsCol  = getTsCol(schema);
       const tableName = `[${customersDb}].[dbo].[cast_${castNum}]`;
       const idList = hwIds.join(',');
       const rows = await runQuery(
-        `SELECT ${fields} FROM (
-          SELECT ${fields}, ROW_NUMBER() OVER (PARTITION BY Device_ID ORDER BY ts_getway DESC) AS rn
+        `SELECT * FROM (
+          SELECT ${fields}, ROW_NUMBER() OVER (PARTITION BY Device_ID ORDER BY ${tsCol} DESC) AS rn
           FROM ${tableName}
-          WHERE Device_ID IN (${idList})
+          WHERE Device_ID IN (${idList}) AND (vl1n > 0 OR kwtot > 0)
         ) t WHERE rn = 1`,
         []
       );
@@ -2362,16 +2397,11 @@ app.get("/api/energy/latest/:device_id", authenticateToken, energyLimiter, energ
     const customersDb = sqlConfig.customersDatabase || sqlConfig.database;
     const tableName = `[${customersDb}].[dbo].[cast_${cast_num}]`;
 
-    const fields = [
-      "ROW_NUMBER() OVER (ORDER BY ts_getway DESC) AS Row_Num", "Device_ID", "type", "fv", "rssi",
-      "vl1n", "vl2n", "vl3n", "AL1", "AL2", "AL3",
-      "kwtot", "kt30d", "kt60d",
-      "ts_getway AT TIME ZONE 'Israel Standard Time' AT TIME ZONE 'UTC' AS ts_getway",
-      "ts_em AT TIME ZONE 'Israel Standard Time' AT TIME ZONE 'UTC' AS ts_em",
-      "kw_t1", "kw_t2", "kw_t3"
-    ].join(", ");
+    const schema = await detectCastSchema(Number(cast_num), customersDb);
+    const fields = getEnergyFields(schema);
+    const tsCol  = getTsCol(schema);
     const result = await runQuery(
-      `SELECT TOP 1 ${fields} FROM ${tableName} WHERE Device_ID = @hw_id ORDER BY ts_getway DESC`,
+      `SELECT TOP 1 ${fields} FROM ${tableName} WHERE Device_ID = @hw_id AND (vl1n > 0 OR kwtot > 0) ORDER BY ${tsCol} DESC`,
       [{ name: "hw_id", type: sql.Int, value: hw_id }]
     );
 
@@ -2470,14 +2500,9 @@ app.get("/api/energy/history/:device_id", authenticateToken, energyLimiter, ener
     const customersDb = sqlConfig.customersDatabase || sqlConfig.database;
     const tableName = `[${customersDb}].[dbo].[cast_${cast_num}]`;
 
-    const fields = [
-      "ROW_NUMBER() OVER (ORDER BY ts_getway DESC) AS Row_Num", "Device_ID", "type", "fv", "rssi",
-      "vl1n", "vl2n", "vl3n", "AL1", "AL2", "AL3",
-      "kwtot", "kt30d", "kt60d",
-      "ts_getway AT TIME ZONE 'Israel Standard Time' AT TIME ZONE 'UTC' AS ts_getway",
-      "ts_em AT TIME ZONE 'Israel Standard Time' AT TIME ZONE 'UTC' AS ts_em",
-      "kw_t1", "kw_t2", "kw_t3"
-    ].join(", ");
+    const schema = await detectCastSchema(Number(cast_num), customersDb);
+    const fields = getEnergyFields(schema);
+    const tsCol  = getTsCol(schema);
 
     let query = `SELECT TOP (@limit) ${fields} FROM ${tableName} WHERE Device_ID = @hw_id`;
     const params: { name: string, type: any, value: any }[] = [
@@ -2486,16 +2511,16 @@ app.get("/api/energy/history/:device_id", authenticateToken, energyLimiter, ener
     ];
 
     if (startStr && endStr) {
-      query += ` AND ts_getway >= @start AND ts_getway <= @end`;
+      query += ` AND ${tsCol} >= @start AND ${tsCol} <= @end`;
       params.push({ name: "start", type: sql.DateTime, value: new Date(startStr) });
       params.push({ name: "end", type: sql.DateTime, value: new Date(endStr) });
     } else {
       const h = hours || 168;
-      query += ` AND ts_getway >= DATEADD(hour, -@hours, GETDATE())`;
+      query += ` AND ${tsCol} >= DATEADD(hour, -@hours, GETDATE())`;
       params.push({ name: "hours", type: sql.Int, value: h });
     }
 
-    query += ` ORDER BY ts_getway DESC`;
+    query += ` ORDER BY ${tsCol} DESC`;
     
     const queryStartTime = Date.now();
     const result = await runQuery(query, params);
@@ -2532,8 +2557,8 @@ app.get("/api/energy/range-edges/:device_id", authenticateToken, energyLimiter, 
     const start = new Date(startStr);
     const end   = new Date(endStr);
     return res.json({
-      first: { ...record, ts_getway: start.toISOString(), kwtot: record.kwtot - 200, kw_t1: record.kw_t1 - 160, kw_t2: 0, kw_t3: record.kw_t3 - 40 },
-      last:  { ...record, ts_getway: end.toISOString() }
+      first: { ...record, ts: start.toISOString(), kwtot: record.kwtot - 200, t1: (record.t1 || 0) - 160, t2: 0, t3: (record.t3 || 0) - 40 },
+      last:  { ...record, ts: end.toISOString() }
     });
   }
 
@@ -2553,8 +2578,10 @@ app.get("/api/energy/range-edges/:device_id", authenticateToken, energyLimiter, 
 
     const customersDb = sqlConfig.customersDatabase || sqlConfig.database;
     const tableName   = `[${customersDb}].[dbo].[cast_${cast_num}]`;
-    const fields      = `ts_getway AT TIME ZONE 'Israel Standard Time' AT TIME ZONE 'UTC' AS ts_getway, kwtot, kw_t1, kw_t2, kw_t3`;
-    const baseWhere   = `WHERE Device_ID = @hw_id AND ts_getway >= @start AND ts_getway <= @end`;
+    const schema    = await detectCastSchema(Number(cast_num), customersDb);
+    const tsCol     = getTsCol(schema);
+    const fields    = getEnergyFields(schema);
+    const baseWhere = `WHERE Device_ID = @hw_id AND ${tsCol} >= @start AND ${tsCol} <= @end`;
     const params = [
       { name: 'hw_id',  type: sql.Int,      value: hw_id },
       { name: 'start',  type: sql.DateTime,  value: new Date(startStr) },
@@ -2562,8 +2589,8 @@ app.get("/api/energy/range-edges/:device_id", authenticateToken, energyLimiter, 
     ];
 
     const [firstRes, lastRes] = await Promise.all([
-      runQuery(`SELECT TOP 1 ${fields} FROM ${tableName} ${baseWhere} ORDER BY ts_getway ASC`,  params),
-      runQuery(`SELECT TOP 1 ${fields} FROM ${tableName} ${baseWhere} ORDER BY ts_getway DESC`, params)
+      runQuery(`SELECT TOP 1 ${fields} FROM ${tableName} ${baseWhere} ORDER BY ${tsCol} ASC`,  params),
+      runQuery(`SELECT TOP 1 ${fields} FROM ${tableName} ${baseWhere} ORDER BY ${tsCol} DESC`, params)
     ]);
 
     res.json({
@@ -2612,38 +2639,44 @@ app.get("/api/energy/daily/:device_id", authenticateToken, energyLimiter, energy
     const customersDb = sqlConfig.customersDatabase || sqlConfig.database;
     const tableName = `[${customersDb}].[dbo].[cast_${cast_num}]`;
 
+    const schema = await detectCastSchema(cast_num, customersDb);
+    const tsCol  = getTsCol(schema);
+    const t1Col  = schema === 'new' ? 't1'    : 'kw_t1';
+    const t2Col  = schema === 'new' ? 't2'    : 'kw_t2';
+    const t3Col  = schema === 'new' ? 't3'    : 'kw_t3';
+
     const query = `
       WITH DailyReadings AS (
           SELECT
-              ts_getway,
+              ${tsCol} AS ts_col,
               kwtot,
-              kw_t1,
-              kw_t2,
-              kw_t3,
-              ROW_NUMBER() OVER (PARTITION BY CAST(ts_getway AS DATE)
-                                ORDER BY ABS(DATEPART(HOUR, ts_getway) - 6)) as rn
+              ${t1Col} AS t1,
+              ${t2Col} AS t2,
+              ${t3Col} AS t3,
+              ROW_NUMBER() OVER (PARTITION BY CAST(${tsCol} AS DATE)
+                                ORDER BY ABS(DATEPART(HOUR, ${tsCol}) - 6)) as rn
           FROM ${tableName}
-          WHERE ts_getway >= DATEADD(DAY, -32, CAST(CAST(GETDATE() AS DATE) AS DATETIME))
-          AND ts_getway < DATEADD(DAY, 1, CAST(CAST(GETDATE() AS DATE) AS DATETIME))
+          WHERE ${tsCol} >= DATEADD(DAY, -32, CAST(CAST(GETDATE() AS DATE) AS DATETIME))
+          AND ${tsCol} < DATEADD(DAY, 1, CAST(CAST(GETDATE() AS DATE) AS DATETIME))
           AND Device_ID = @hw_id
       ),
       DailyTotals AS (
-          SELECT 
-              CAST(ts_getway AS DATE) AS time,
-              kwtot, kw_t1, kw_t2, kw_t3,
-              LAG(kwtot) OVER (ORDER BY ts_getway) AS prev_kwtot,
-              LAG(kw_t1) OVER (ORDER BY ts_getway) AS prev_kw_t1,
-              LAG(kw_t2) OVER (ORDER BY ts_getway) AS prev_kw_t2,
-              LAG(kw_t3) OVER (ORDER BY ts_getway) AS prev_kw_t3
+          SELECT
+              CAST(ts_col AS DATE) AS time,
+              kwtot, t1, t2, t3,
+              LAG(kwtot) OVER (ORDER BY ts_col) AS prev_kwtot,
+              LAG(t1) OVER (ORDER BY ts_col) AS prev_t1,
+              LAG(t2) OVER (ORDER BY ts_col) AS prev_t2,
+              LAG(t3) OVER (ORDER BY ts_col) AS prev_t3
           FROM DailyReadings
           WHERE rn = 1
       )
-      SELECT 
+      SELECT
           CAST(time AS DATETIME) AS time,
           ROUND(ISNULL(kwtot - prev_kwtot, 0), 1) AS total,
-          ROUND(ISNULL(kw_t1 - prev_kw_t1, 0), 1) AS t1,
-          ROUND(ISNULL(kw_t2 - prev_kw_t2, 0), 1) AS t2,
-          ROUND(ISNULL(kw_t3 - prev_kw_t3, 0), 1) AS t3
+          ROUND(ISNULL(t1 - prev_t1, 0), 1) AS t1,
+          ROUND(ISNULL(t2 - prev_t2, 0), 1) AS t2,
+          ROUND(ISNULL(t3 - prev_t3, 0), 1) AS t3
       FROM DailyTotals
       WHERE prev_kwtot IS NOT NULL
       ORDER BY time

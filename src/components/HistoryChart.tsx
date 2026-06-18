@@ -42,9 +42,13 @@ export const HistoryChart: React.FC<HistoryChartProps> = ({ data, onRangeChange 
   });
   const [fullScreenChart, setFullScreenChart] = useState<'ampere' | 'voltage' | null>(null);
 
+  const isSinglePhase = data.length > 0 && data[0].meter_type === 'EM511';
+  const ampLines = isSinglePhase ? AMPERE_LINES.slice(0, 1) : AMPERE_LINES;
+  const voltLines = isSinglePhase ? VOLTAGE_LINES.slice(0, 1) : VOLTAGE_LINES;
+
   const chartData = useMemo(() => {
     return data.map(record => {
-      const date = new Date(record.ts_getway);
+      const date = new Date(record.ts);
       return {
         ts: date.getTime(),
         vl1: record.vl1n,
@@ -57,7 +61,7 @@ export const HistoryChart: React.FC<HistoryChartProps> = ({ data, onRangeChange 
     }).sort((a, b) => a.ts - b.ts);
   }, [data]);
 
-  const ampStats = useMemo(() => AMPERE_LINES.map(l => {
+  const ampStats = useMemo(() => ampLines.map(l => {
     const vals = chartData.map(d => (d as any)[l.key] as number).filter(v => v != null && !isNaN(v));
     const min = vals.length ? Math.min(...vals) : null;
     const max = vals.length ? Math.max(...vals) : null;
@@ -66,7 +70,7 @@ export const HistoryChart: React.FC<HistoryChartProps> = ({ data, onRangeChange 
     return { ...l, minFmt: fmt(min), avgFmt: fmt(avg), maxFmt: fmt(max), unit: 'A' };
   }), [chartData]);
 
-  const voltStats = useMemo(() => VOLTAGE_LINES.map(l => {
+  const voltStats = useMemo(() => voltLines.map(l => {
     const vals = chartData.map(d => (d as any)[l.key] as number).filter(v => v != null && !isNaN(v));
     const min = vals.length ? Math.min(...vals) : null;
     const max = vals.length ? Math.max(...vals) : null;
@@ -280,13 +284,13 @@ export const HistoryChart: React.FC<HistoryChartProps> = ({ data, onRangeChange 
 
         {/* Toggle pills */}
         <div style={{ marginBottom: 12 }}>
-          <PillRow lines={AMPERE_LINES} hidden={hiddenA} setHidden={setHiddenA} />
+          <PillRow lines={ampLines} hidden={hiddenA} setHidden={setHiddenA} />
         </div>
 
         {/* Chart */}
         <div className={cn('w-full', fullScreenChart === 'ampere' ? 'flex-1' : 'h-[260px] md:h-[440px]')} dir="ltr"
           style={{ background: CHART_BG, borderRadius: 10, overflow: 'hidden' }}>
-          <PhaseChart lines={AMPERE_LINES} hidden={hiddenA} gradPrefix="hc-amp" unit="A" tickSuffix="A" />
+          <PhaseChart lines={ampLines} hidden={hiddenA} gradPrefix="hc-amp" unit="A" tickSuffix="A" />
         </div>
 
         {/* Stats */}
@@ -321,13 +325,13 @@ export const HistoryChart: React.FC<HistoryChartProps> = ({ data, onRangeChange 
 
         {/* Toggle pills */}
         <div style={{ marginBottom: 12 }}>
-          <PillRow lines={VOLTAGE_LINES} hidden={hiddenV} setHidden={setHiddenV} />
+          <PillRow lines={voltLines} hidden={hiddenV} setHidden={setHiddenV} />
         </div>
 
         {/* Chart */}
         <div className={cn('w-full', fullScreenChart === 'voltage' ? 'flex-1' : 'h-[260px] md:h-[440px]')} dir="ltr"
           style={{ background: CHART_BG, borderRadius: 10, overflow: 'hidden' }}>
-          <PhaseChart lines={VOLTAGE_LINES} hidden={hiddenV} gradPrefix="hc-volt" unit="V" tickSuffix="V" />
+          <PhaseChart lines={voltLines} hidden={hiddenV} gradPrefix="hc-volt" unit="V" tickSuffix="V" />
         </div>
 
         {/* Stats */}
