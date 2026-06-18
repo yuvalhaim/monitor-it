@@ -2351,9 +2351,17 @@ app.get("/api/energy/latest/all", authenticateToken, energyLimiter, energySustai
         ) t WHERE rn = 1`,
         []
       );
+      const cntRows = await runQuery(
+        `SELECT Device_ID, COUNT(*) AS cnt FROM ${tableName}
+         WHERE Device_ID IN (${idList}) AND ${tsCol} >= DATEADD(hour, -1, GETDATE())
+         GROUP BY Device_ID`,
+        []
+      );
+      const cntByHwId: Record<number, number> = {};
+      cntRows.recordset.forEach((r: any) => { cntByHwId[r.Device_ID] = r.cnt; });
       rows.recordset.forEach((row: any) => {
         const idUser = hwToIdUser[row.Device_ID];
-        if (idUser != null) result[idUser] = row;
+        if (idUser != null) result[idUser] = { ...row, msgsLastHour: cntByHwId[row.Device_ID] ?? 0 };
       });
     }
     logger.info("Bulk latest energy OK", { devices: Object.keys(result).length, user: user_name, role });

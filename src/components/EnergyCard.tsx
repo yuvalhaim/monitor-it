@@ -51,8 +51,11 @@ export const EnergyCard: React.FC<EnergyCardProps> = ({ device, data, onClick })
     return Math.min(Math.max(p, 0), 100);
   };
 
+  const msgsLastHour = data?.msgsLastHour ?? null;
+  const msgColor = msgsLastHour === null ? 'var(--muted)' : msgsLastHour >= 8 ? '#34d399' : msgsLastHour >= 3 ? '#fbbf24' : '#f87171';
+
   return (
-    <div 
+    <div
       onClick={onClick}
       className={cn(
         "bg-[var(--card)] rounded-2xl overflow-hidden shadow-lg transition-all duration-300 cursor-pointer group hover:scale-[1.02] border border-[var(--border)]",
@@ -63,15 +66,23 @@ export const EnergyCard: React.FC<EnergyCardProps> = ({ device, data, onClick })
       <div className="p-4 border-b border-white/5">
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-2">
-            <div 
-              className="w-2.5 h-2.5 rounded-full animate-pulse" 
-              style={{ backgroundColor: getStatusColor(), boxShadow: `0 0 8px ${getStatusColor()}` }} 
+            <div
+              className="w-2.5 h-2.5 rounded-full animate-pulse"
+              style={{ backgroundColor: getStatusColor(), boxShadow: `0 0 8px ${getStatusColor()}` }}
             />
             <h3 className="text-lg md:text-base font-bold text-[var(--foreground)]">{device.site_name}</h3>
           </div>
-          <span className="text-base md:text-sm text-[var(--foreground)] font-medium">
-            {data ? formatTimeAgo(data.ts) : 'לא זמין'}
-          </span>
+          <div className="flex items-center gap-3">
+            {msgsLastHour !== null && (
+              <div className="flex items-center gap-1.5">
+                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: msgColor, boxShadow: `0 0 5px ${msgColor}` }} />
+                <span className="font-mono text-xs font-semibold" style={{ color: msgColor }}>{msgsLastHour} msg/h</span>
+              </div>
+            )}
+            <span className="text-base md:text-sm text-[var(--foreground)] font-medium">
+              {data ? formatTimeAgo(data.ts) : 'לא זמין'}
+            </span>
+          </div>
         </div>
         <div className="flex items-center justify-between">
           <span className="text-base md:text-sm text-[var(--foreground)]">{device.location}</span>

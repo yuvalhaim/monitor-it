@@ -27,6 +27,7 @@ export interface EnergyData {
   t1: number;
   t2: number;
   t3: number;
+  msgsLastHour?: number;
 }
 
 export interface AlertConfig {
