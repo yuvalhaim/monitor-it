@@ -39,6 +39,7 @@ const RANGES = [
   { id: "today",     label: "היום",        days: 1 },
   { id: "yesterday", label: "אתמול",       days: 2 },
   { id: "week",      label: "שבוע אחרון",  days: 7 },
+  { id: "month",     label: "חודש",        days: 30 },
   { id: "custom",    label: "טווח מותאם",  days: 0 },
 ];
 

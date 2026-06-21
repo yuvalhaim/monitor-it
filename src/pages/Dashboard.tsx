@@ -53,6 +53,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, selectedDevice, dev
         case 'today': hours = 24; limit = 1000; break;
         case 'yesterday': hours = 48; limit = 2000; break;
         case 'week': hours = 168; limit = 3000; break;
+        case 'month': hours = 720; limit = 5000; break;
         case 'custom': hours = 720; limit = 5000; break;
       }
     }

@@ -106,6 +106,7 @@ export const HistoryChart: React.FC<HistoryChartProps> = ({ data, onRangeChange 
     { id: 'today', label: 'היום' },
     { id: 'yesterday', label: 'אתמול' },
     { id: 'week', label: 'שבוע אחרון' },
+    { id: 'month', label: 'חודש' },
     { id: 'custom', label: 'טווח מותאם' },
   ];
 
