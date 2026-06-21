@@ -2257,29 +2257,32 @@ app.get("/api/haifa/history", authenticateToken, async (req: any, res) => {
 //   old: ts_getway, kw_t1/t2/t3, fv, rssi, type, kt30d, kt60d
 //   new: ts, t1/t2/t3, meter_type  (cast_15+)
 // We detect once per cast_num and cache the result.
-interface CastSchema { ts: 'new' | 'old'; hz: boolean; }
+interface CastSchema { ts: 'new' | 'old'; hz: boolean; meter_serial: boolean; }
 const castSchemaCache = new Map<number, CastSchema>();
 
 async function detectCastSchema(castNum: number, customersDb: string): Promise<CastSchema> {
   if (castSchemaCache.has(castNum)) return castSchemaCache.get(castNum)!;
   const r = await runQuery(
     `SELECT
-       SUM(CASE WHEN COLUMN_NAME = 'ts' THEN 1 ELSE 0 END) AS has_ts,
-       SUM(CASE WHEN COLUMN_NAME = 'hz' THEN 1 ELSE 0 END) AS has_hz
+       SUM(CASE WHEN COLUMN_NAME = 'ts'           THEN 1 ELSE 0 END) AS has_ts,
+       SUM(CASE WHEN COLUMN_NAME = 'hz'           THEN 1 ELSE 0 END) AS has_hz,
+       SUM(CASE WHEN COLUMN_NAME = 'meter_serial' THEN 1 ELSE 0 END) AS has_meter_serial
      FROM [${customersDb}].INFORMATION_SCHEMA.COLUMNS
      WHERE TABLE_SCHEMA = 'dbo' AND TABLE_NAME = @tbl`,
     [{ name: 'tbl', type: sql.NVarChar, value: `cast_${castNum}` }]
   );
   const schema: CastSchema = {
-    ts: r.recordset[0].has_ts > 0 ? 'new' : 'old',
-    hz: r.recordset[0].has_hz > 0,
+    ts:           r.recordset[0].has_ts           > 0 ? 'new' : 'old',
+    hz:           r.recordset[0].has_hz           > 0,
+    meter_serial: r.recordset[0].has_meter_serial > 0,
   };
   castSchemaCache.set(castNum, schema);
   return schema;
 }
 
 function getEnergyFields(schema: CastSchema): string {
-  const hzField = schema.hz ? ", hz" : ", NULL AS hz";
+  const hzField     = schema.hz           ? ", hz"                                                      : ", NULL AS hz";
+  const serialField = schema.meter_serial ? ", CAST(meter_serial AS NVARCHAR(20)) AS meter_serial"      : ", NULL AS meter_serial";
   return schema.ts === 'new'
     ? [
         "Device_ID", "meter_type",
@@ -2287,14 +2290,14 @@ function getEnergyFields(schema: CastSchema): string {
         "ts    AT TIME ZONE 'Israel Standard Time' AT TIME ZONE 'UTC' AS ts",
         "ts_em AT TIME ZONE 'Israel Standard Time' AT TIME ZONE 'UTC' AS ts_em",
         "t1", "t2", "t3"
-      ].join(", ") + hzField
+      ].join(", ") + hzField + serialField
     : [
         "Device_ID", "NULL AS meter_type",
         "vl1n", "vl2n", "vl3n", "AL1", "AL2", "AL3", "kwtot",
         "ts_getway AT TIME ZONE 'Israel Standard Time' AT TIME ZONE 'UTC' AS ts",
         "ts_em     AT TIME ZONE 'Israel Standard Time' AT TIME ZONE 'UTC' AS ts_em",
         "kw_t1 AS t1", "kw_t2 AS t2", "kw_t3 AS t3"
-      ].join(", ") + hzField;
+      ].join(", ") + hzField + serialField;
 }
 
 function getTsCol(schema: CastSchema) { return schema.ts === 'new' ? 'ts' : 'ts_getway'; }

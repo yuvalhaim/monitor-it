@@ -30,6 +30,7 @@ export interface EnergyData {
   t3: number;
   msgsLastHour?: number;
   hz?: number | null;
+  meter_serial?: string | null;
 }
 
 export interface AlertConfig {

@@ -7,7 +7,7 @@ import { ConsumptionCard } from '../components/ConsumptionCard';
 import { HistoryChart } from '../components/HistoryChart';
 import { HistoryTable } from '../components/HistoryTable';
 import { ConsumptionDistribution } from '../components/ConsumptionDistribution';
-import { RefreshCw, AlertCircle, ArrowRight, Monitor } from 'lucide-react';
+import { RefreshCw, AlertCircle, ArrowRight, Monitor, AlertTriangle } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { apiFetch } from '../lib/apiFetch';
 
@@ -195,12 +195,28 @@ export const Dashboard: React.FC<DashboardProps> = ({ token, selectedDevice, dev
                 {selectedDevice ? 'מכשיר פעיל' : 'כל המכשירים'}
               </span>
             </div>
-            <p className="text-[var(--muted)] text-base md:text-sm font-medium flex items-center gap-2">
+            <p className="text-[var(--muted)] text-base md:text-sm font-medium flex items-center gap-2 flex-wrap">
               {selectedDevice ? (
                 <>
                   מיקום: <span className="text-[var(--foreground)]">{selectedDevice.location}</span>
                   <span className="w-1 h-1 rounded-full bg-[var(--border)]" />
                   מזהה: <span className="text-[var(--foreground)] font-mono">#{selectedDevice.id_user}</span>
+                  {latestData?.meter_serial !== undefined && (
+                    <>
+                      <span className="w-1 h-1 rounded-full bg-[var(--border)]" />
+                      {(() => {
+                        const serials = [...new Set(historyData.map(d => d.meter_serial).filter(Boolean))];
+                        const replaced = serials.length > 1;
+                        return (
+                          <span className={`flex items-center gap-1 font-mono ${replaced ? 'text-red-400' : 'text-[var(--foreground)]'}`}>
+                            {replaced && <AlertTriangle className="w-3.5 h-3.5" />}
+                            מספר מונה: {latestData.meter_serial ?? '—'}
+                            {replaced && <span className="text-red-400 text-xs font-sans">(מונה הוחלף)</span>}
+                          </span>
+                        );
+                      })()}
+                    </>
+                  )}
                 </>
               ) : (
                 <>סה"כ מכשירים מנוטרים: <span className="text-[var(--foreground)]">{devices.length}</span></>
