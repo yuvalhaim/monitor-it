@@ -536,6 +536,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         מיקום: {device.location}
                       </span>
                     )}
+                    {(() => {
+                      const serial = allLatestData[String(device.id_user)]?.meter_serial;
+                      if (serial === undefined) return null;
+                      return (
+                        <span className="text-xs text-[var(--sidebar-muted)] flex items-center gap-1 font-mono">
+                          מספר מונה: {serial ?? '—'}
+                        </span>
+                      );
+                    })()}
                     {device.installation_date && (
                       <span className="text-xs text-[var(--sidebar-muted)] flex items-center gap-1">
                         <CalendarDays className="w-3 h-3 shrink-0" />
