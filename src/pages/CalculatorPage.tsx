@@ -72,6 +72,7 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({ devices, token, 
     return {
       deviceId,
       deviceName: devices.find(d => d.id_user === deviceId)?.site_name || `מכשיר ${deviceId}`,
+      meterSerial: (lastRecord.meter_serial ?? firstRecord.meter_serial ?? null) as string | null,
       consumption: Math.max(0, consumption),
       t1,
       t2,
@@ -168,10 +169,11 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({ devices, token, 
     const fileName = `energy_calculation_${deviceName}_${dateStr}`;
     const dateRange = `${format(new Date(result.startDate), 'dd/MM/yyyy')} - ${format(new Date(result.endDate), 'dd/MM/yyyy')}`;
 
-    const headers = ['מונה', 'זמן התחלה', 'זמן סיום', 'קריאה התחלתית', 'קריאה סופית', 'צריכה kWh', 'T1 שפל (kWh)', 'T2 גבע (kWh)', 'T3 פסגה (kWh)', 'ממוצע ליום'];
+    const headers = ['מונה', 'מספר מונה', 'זמן התחלה', 'זמן סיום', 'קריאה התחלתית', 'קריאה סופית', 'צריכה kWh', 'T1 שפל (kWh)', 'T2 גבע (kWh)', 'T3 פסגה (kWh)', 'ממוצע ליום'];
     const tableData = result.isAll
       ? result.items.map((item: any) => [
           item.deviceName,
+          item.meterSerial ?? '—',
           new Date(item.startDate).toLocaleString('he-IL'),
           new Date(item.endDate).toLocaleString('he-IL'),
           item.startVal.toLocaleString(undefined, { maximumFractionDigits: 1 }),
@@ -184,6 +186,7 @@ export const CalculatorPage: React.FC<CalculatorPageProps> = ({ devices, token, 
         ])
       : [[
           result.deviceName,
+          result.meterSerial ?? '—',
           new Date(result.startDate).toLocaleString('he-IL'),
           new Date(result.endDate).toLocaleString('he-IL'),
           result.startVal.toLocaleString(undefined, { maximumFractionDigits: 1 }),

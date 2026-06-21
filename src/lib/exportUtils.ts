@@ -147,7 +147,9 @@ export const exportToPDF = async (
   if (tableData && tableData.length > 0) {
     autoTable(doc, {
       head: [headers.map(toVisualLTR)],
-      body: tableData,
+      body: tableData.map(row =>
+        row.map(cell => typeof cell === 'string' && isHebrew(cell) ? toVisualLTR(cell) : cell)
+      ),
       startY: currentY,
       styles: { font: 'Rubik', halign: 'right', fontSize: 9 },
       headStyles: { font: 'Rubik', fillColor: [0, 119, 182], textColor: 255, fontStyle: 'normal' },
