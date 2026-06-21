@@ -2257,39 +2257,47 @@ app.get("/api/haifa/history", authenticateToken, async (req: any, res) => {
 //   old: ts_getway, kw_t1/t2/t3, fv, rssi, type, kt30d, kt60d
 //   new: ts, t1/t2/t3, meter_type  (cast_15+)
 // We detect once per cast_num and cache the result.
-const castSchemaCache = new Map<number, 'new' | 'old'>();
+interface CastSchema { ts: 'new' | 'old'; hz: boolean; }
+const castSchemaCache = new Map<number, CastSchema>();
 
-async function detectCastSchema(castNum: number, customersDb: string): Promise<'new' | 'old'> {
+async function detectCastSchema(castNum: number, customersDb: string): Promise<CastSchema> {
   if (castSchemaCache.has(castNum)) return castSchemaCache.get(castNum)!;
   const r = await runQuery(
-    `SELECT COUNT(*) AS cnt FROM [${customersDb}].INFORMATION_SCHEMA.COLUMNS
-     WHERE TABLE_SCHEMA = 'dbo' AND TABLE_NAME = @tbl AND COLUMN_NAME = 'ts'`,
+    `SELECT
+       SUM(CASE WHEN COLUMN_NAME = 'ts' THEN 1 ELSE 0 END) AS has_ts,
+       SUM(CASE WHEN COLUMN_NAME = 'hz' THEN 1 ELSE 0 END) AS has_hz
+     FROM [${customersDb}].INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = 'dbo' AND TABLE_NAME = @tbl`,
     [{ name: 'tbl', type: sql.NVarChar, value: `cast_${castNum}` }]
   );
-  const schema: 'new' | 'old' = r.recordset[0].cnt > 0 ? 'new' : 'old';
+  const schema: CastSchema = {
+    ts: r.recordset[0].has_ts > 0 ? 'new' : 'old',
+    hz: r.recordset[0].has_hz > 0,
+  };
   castSchemaCache.set(castNum, schema);
   return schema;
 }
 
-function getEnergyFields(schema: 'new' | 'old'): string {
-  return schema === 'new'
+function getEnergyFields(schema: CastSchema): string {
+  const hzField = schema.hz ? ", hz" : ", NULL AS hz";
+  return schema.ts === 'new'
     ? [
         "Device_ID", "meter_type",
         "vl1n", "vl2n", "vl3n", "AL1", "AL2", "AL3", "kwtot",
         "ts    AT TIME ZONE 'Israel Standard Time' AT TIME ZONE 'UTC' AS ts",
         "ts_em AT TIME ZONE 'Israel Standard Time' AT TIME ZONE 'UTC' AS ts_em",
         "t1", "t2", "t3"
-      ].join(", ")
+      ].join(", ") + hzField
     : [
         "Device_ID", "NULL AS meter_type",
         "vl1n", "vl2n", "vl3n", "AL1", "AL2", "AL3", "kwtot",
         "ts_getway AT TIME ZONE 'Israel Standard Time' AT TIME ZONE 'UTC' AS ts",
         "ts_em     AT TIME ZONE 'Israel Standard Time' AT TIME ZONE 'UTC' AS ts_em",
         "kw_t1 AS t1", "kw_t2 AS t2", "kw_t3 AS t3"
-      ].join(", ");
+      ].join(", ") + hzField;
 }
 
-function getTsCol(schema: 'new' | 'old') { return schema === 'new' ? 'ts' : 'ts_getway'; }
+function getTsCol(schema: CastSchema) { return schema.ts === 'new' ? 'ts' : 'ts_getway'; }
 // ────────────────────────────────────────────────────────────────────────────
 
 // GET /api/energy/latest/all — returns latest record for every device the caller can see (single DB round-trip)
@@ -2654,9 +2662,9 @@ app.get("/api/energy/daily/:device_id", authenticateToken, energyLimiter, energy
 
     const schema = await detectCastSchema(cast_num, customersDb);
     const tsCol  = getTsCol(schema);
-    const t1Col  = schema === 'new' ? 't1'    : 'kw_t1';
-    const t2Col  = schema === 'new' ? 't2'    : 'kw_t2';
-    const t3Col  = schema === 'new' ? 't3'    : 'kw_t3';
+    const t1Col  = schema.ts === 'new' ? 't1'    : 'kw_t1';
+    const t2Col  = schema.ts === 'new' ? 't2'    : 'kw_t2';
+    const t3Col  = schema.ts === 'new' ? 't3'    : 'kw_t3';
 
     const query = `
       WITH DailyReadings AS (

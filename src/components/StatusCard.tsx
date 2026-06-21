@@ -1,5 +1,5 @@
 import React from 'react';
-import { Activity, Cpu, Clock, Zap, Timer } from 'lucide-react';
+import { Activity, Cpu, Clock, Zap, Timer, Radio } from 'lucide-react';
 import { EnergyData } from '../types';
 
 interface StatusCardProps {
@@ -27,7 +27,7 @@ export const StatusCard: React.FC<StatusCardProps> = ({ data }) => {
     : 'בעיית RTC';
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+    <div className={`grid grid-cols-1 md:grid-cols-2 ${data.hz != null ? 'lg:grid-cols-6' : 'lg:grid-cols-5'} gap-4 mb-6`}>
       <div className="bg-[var(--card)] p-4 rounded-2xl relative overflow-hidden group shadow-lg border border-[var(--border)]">
         <div className="absolute top-0 left-0 p-3 opacity-5 group-hover:opacity-10 transition-opacity">
           <Activity className="w-12 h-12 text-[var(--foreground)]" />
@@ -90,6 +90,25 @@ export const StatusCard: React.FC<StatusCardProps> = ({ data }) => {
           <span className="text-sm md:text-xs font-bold text-[var(--muted)] uppercase tracking-widest">kWh</span>
         </div>
       </div>
+
+      {/* Hz — grid frequency (only when the meter reports it) */}
+      {data.hz != null && (
+        <div className="bg-[var(--card)] p-4 rounded-2xl relative overflow-hidden group shadow-lg border border-[var(--border)]">
+          <div className="absolute top-0 left-0 p-3 opacity-5 group-hover:opacity-10 transition-opacity">
+            <Radio className="w-12 h-12 text-[var(--foreground)]" />
+          </div>
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-2 bg-fuchsia-500/10 rounded-lg">
+              <Radio className="w-5 h-5 text-fuchsia-400" />
+            </div>
+            <span className="text-base md:text-sm font-bold text-[var(--muted)] uppercase tracking-wider">תדירות</span>
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl md:text-3xl font-bold text-[var(--foreground)] font-mono">{data.hz.toFixed(2)}</span>
+            <span className="text-sm md:text-xs font-bold text-[var(--muted)] uppercase tracking-widest">Hz</span>
+          </div>
+        </div>
+      )}
 
       {/* RTC — meter internal clock */}
       <div className="bg-[var(--card)] p-4 rounded-2xl relative overflow-hidden group shadow-lg border border-[var(--border)]">
