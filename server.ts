@@ -657,6 +657,7 @@ app.get("/api/devices", authenticateToken, async (req: any, res) => {
       "CAST(mobile_phone AS VARCHAR(50)) AS mobile_phone",
       "date_exp",
       "DATEDIFF(day, GETDATE(), date_exp) AS days_remaining",
+      "installation_date",
       "Alerts"
     ].join(", ");
     let query = `SELECT ${fields} FROM ${getTableName('Custumer', 'customers')} WHERE application = 'energy'`;
@@ -738,7 +739,7 @@ app.get("/api/customers/all", authenticateToken, authorizeAdmin, async (req: any
       "CAST(location AS VARCHAR(255)) AS location",
       "CAST(contact_name AS VARCHAR(255)) AS contact_name",
       "CAST(mobile_phone AS VARCHAR(50)) AS mobile_phone",
-      "date_exp", "Alerts",
+      "date_exp", "installation_date", "Alerts",
       "CAST(application AS VARCHAR(50)) AS application",
       "CAST(role AS VARCHAR(50)) AS role",
       "cast_num",
@@ -807,9 +808,9 @@ app.post("/api/customers", authenticateToken, authorizeAdmin, async (req: any, r
     }
     await runQuery(`
         INSERT INTO ${getTableName('Custumer', 'customers')}
-          (id_user, user_name, site_name, location, contact_name, mobile_phone, email, date_exp, Alerts, application, password, role, cast_num, device_id, unit, min, max, alert_low, alert_high, widget_type, Display_Graph, pub_topic, sub_topic, mqtt_client_id)
+          (id_user, user_name, site_name, location, contact_name, mobile_phone, email, date_exp, installation_date, Alerts, application, password, role, cast_num, device_id, unit, min, max, alert_low, alert_high, widget_type, Display_Graph, pub_topic, sub_topic, mqtt_client_id)
         VALUES
-          (@id_user, @user_name, @site_name, @location, @contact_name, @mobile_phone, @email, @date_exp, @Alerts, @application, @password, @role, @cast_num, @device_id, @unit, @min, @max, @alert_low, @alert_high, @widget_type, @Display_Graph, @pub_topic, @sub_topic, @mqtt_client_id)
+          (@id_user, @user_name, @site_name, @location, @contact_name, @mobile_phone, @email, @date_exp, @installation_date, @Alerts, @application, @password, @role, @cast_num, @device_id, @unit, @min, @max, @alert_low, @alert_high, @widget_type, @Display_Graph, @pub_topic, @sub_topic, @mqtt_client_id)
       `, [
       { name: "id_user",        type: sql.Int,      value: nextId },
       { name: "user_name",      type: sql.NVarChar, value: customer.user_name },
@@ -818,8 +819,9 @@ app.post("/api/customers", authenticateToken, authorizeAdmin, async (req: any, r
       { name: "contact_name",   type: sql.NVarChar, value: customer.contact_name },
       { name: "mobile_phone",   type: sql.NVarChar, value: customer.mobile_phone },
       { name: "email",          type: sql.NVarChar, value: customer.email },
-      { name: "date_exp",       type: sql.Date,     value: customer.date_exp || null },
-      { name: "Alerts",         type: sql.Bit,      value: customer.Alerts ? 1 : 0 },
+      { name: "date_exp",          type: sql.Date,     value: customer.date_exp || null },
+      { name: "installation_date", type: sql.Date,     value: customer.installation_date || null },
+      { name: "Alerts",            type: sql.Bit,      value: customer.Alerts ? 1 : 0 },
       { name: "application",    type: sql.NVarChar, value: customer.application || 'Energy' },
       { name: "password",       type: sql.NVarChar, value: hashedPassword },
       { name: "role",           type: sql.NVarChar, value: customer.role || 'user' },
@@ -894,8 +896,9 @@ app.put("/api/customers/:id", authenticateToken, authorizeAdmin, async (req: any
       { name: "contact_name", type: sql.NVarChar, value: customer.contact_name },
       { name: "mobile_phone", type: sql.NVarChar, value: customer.mobile_phone },
       { name: "email",        type: sql.NVarChar, value: customer.email },
-      { name: "date_exp",     type: sql.Date,     value: customer.date_exp || null },
-      { name: "Alerts",       type: sql.Bit,      value: customer.Alerts ? 1 : 0 },
+      { name: "date_exp",          type: sql.Date,     value: customer.date_exp || null },
+      { name: "installation_date", type: sql.Date,     value: customer.installation_date || null },
+      { name: "Alerts",            type: sql.Bit,      value: customer.Alerts ? 1 : 0 },
       { name: "application",  type: sql.NVarChar, value: customer.application },
       { name: "role",         type: sql.NVarChar, value: customer.role },
       { name: "cast_num",     type: sql.Int,      value: customer.cast_num || null },
@@ -928,8 +931,9 @@ app.put("/api/customers/:id", authenticateToken, authorizeAdmin, async (req: any
             contact_name  = @contact_name,
             mobile_phone  = @mobile_phone,
             email         = @email,
-            date_exp      = @date_exp,
-            Alerts        = @Alerts,
+            date_exp           = @date_exp,
+            installation_date  = @installation_date,
+            Alerts             = @Alerts,
             application   = @application,
             role          = @role,
             cast_num      = @cast_num,
@@ -1099,6 +1103,7 @@ app.get("/api/users/me", authenticateToken, async (req: any, res) => {
         CAST(application AS VARCHAR(50)) AS application,
         cast_num,
         CONVERT(VARCHAR(10), date_exp, 23) AS date_exp,
+        CONVERT(VARCHAR(10), installation_date, 23) AS installation_date,
         CAST(unit AS VARCHAR(20)) AS unit,
         min, max, alert_low, alert_high,
         CAST(widget_type AS VARCHAR(20)) AS widget_type,

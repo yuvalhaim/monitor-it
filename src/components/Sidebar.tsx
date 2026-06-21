@@ -12,8 +12,8 @@ import {
   Mail,
   Phone,
   Building2,
-  Contact,
   CalendarClock,
+  CalendarDays,
   Zap,
   Table2,
   Hash,
@@ -233,33 +233,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </div>
             )}
 
-            {userProfile.contact_name && (
-              <div className="flex items-center gap-2 text-[var(--sidebar-foreground)]">
-                <Contact className="w-4 h-4 text-[var(--primary)]" />
-                <span className="text-base md:text-sm font-semibold truncate">{userProfile.contact_name}</span>
-              </div>
-            )}
-
             {userProfile.mobile_phone && (
               <div className="flex items-center gap-2 text-[var(--sidebar-foreground)]">
                 <Phone className="w-4 h-4 text-[var(--primary)]" />
                 <span className="text-base md:text-sm font-mono font-semibold" dir="ltr">{userProfile.mobile_phone}</span>
-              </div>
-            )}
-
-            {userProfile.site_name && (
-              <div className="flex items-center gap-2 text-[var(--sidebar-muted)]">
-                <Building2 className="w-4 h-4" />
-                <span className="text-sm md:text-xs truncate">שם אתר: {userProfile.site_name}</span>
-              </div>
-            )}
-
-            {userProfile.date_exp && (
-              <div className="flex items-center gap-2 text-[var(--sidebar-muted)]">
-                <CalendarClock className="w-4 h-4 shrink-0" />
-                <span className="text-sm md:text-xs">
-                  תפוגה: {new Date(userProfile.date_exp).toLocaleDateString('he-IL')}
-                </span>
               </div>
             )}
           </div>
@@ -537,9 +514,31 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     </div>
                     <Monitor className={cn("w-4 h-4", selectedDeviceId === device.id_user ? "text-[var(--sidebar-foreground)]" : "text-[var(--sidebar-muted)] group-hover:text-[var(--sidebar-foreground)]")} />
                   </div>
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-sm md:text-sm text-[var(--sidebar-muted)] font-mono uppercase tracking-tighter">#{device.id_user}</span>
-                    <span className="text-sm md:text-sm text-[var(--sidebar-muted)] font-medium truncate">{device.location}</span>
+                  <div className="flex flex-col gap-0.5 mt-0.5">
+                    {device.site_name && (
+                      <span className="text-xs text-[var(--sidebar-muted)] flex items-center gap-1">
+                        <Building2 className="w-3 h-3 shrink-0" />
+                        שם אתר: {device.site_name}
+                      </span>
+                    )}
+                    {device.location && (
+                      <span className="text-xs text-[var(--sidebar-muted)] flex items-center gap-1 truncate">
+                        <Monitor className="w-3 h-3 shrink-0" />
+                        מיקום: {device.location}
+                      </span>
+                    )}
+                    {device.installation_date && (
+                      <span className="text-xs text-[var(--sidebar-muted)] flex items-center gap-1">
+                        <CalendarDays className="w-3 h-3 shrink-0" />
+                        התקנה: {new Date(device.installation_date).toLocaleDateString('he-IL')}
+                      </span>
+                    )}
+                    {device.date_exp && (
+                      <span className="text-xs text-[var(--sidebar-muted)] flex items-center gap-1">
+                        <CalendarClock className="w-3 h-3 shrink-0" />
+                        תפוגה: {new Date(device.date_exp).toLocaleDateString('he-IL')}
+                      </span>
+                    )}
                   </div>
                   {selectedDeviceId === device.id_user && (
                     <div className="absolute right-0 top-0 bottom-0 w-1 bg-[var(--primary)]" />

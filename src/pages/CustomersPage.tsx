@@ -27,6 +27,7 @@ interface Customer {
   pub_topic: string | null;
   sub_topic: string | null;
   mqtt_client_id: number | null;
+  installation_date: string | null;
 }
 
 const EMPTY_FORM: Omit<Customer, 'id_user'> & { id_user: number | ''; password: string } = {
@@ -54,6 +55,7 @@ const EMPTY_FORM: Omit<Customer, 'id_user'> & { id_user: number | ''; password: 
   pub_topic: null,
   sub_topic: null,
   mqtt_client_id: null,
+  installation_date: '',
 };
 
 interface CustomersPageProps {
@@ -168,6 +170,7 @@ export function CustomersPage({ token }: CustomersPageProps) {
       pub_topic: c.pub_topic ?? null,
       sub_topic: c.sub_topic ?? null,
       mqtt_client_id: c.mqtt_client_id ?? null,
+      installation_date: c.installation_date ? c.installation_date.slice(0, 10) : '',
     });
     setEditingId(c.id_user);
     setModalMode('edit');
@@ -610,6 +613,14 @@ export function CustomersPage({ token }: CustomersPageProps) {
                       className={formErrors.date_exp ? inputErrCls : inputCls}
                       value={formData.date_exp}
                       onChange={e => { setFormData(p => ({ ...p, date_exp: e.target.value })); setFormErrors(p => ({ ...p, date_exp: '' })); }}
+                    />
+                  </Field>
+                  <Field label="תאריך התקנה">
+                    <input
+                      type="date"
+                      className={inputCls}
+                      value={formData.installation_date ?? ''}
+                      onChange={e => setFormData(p => ({ ...p, installation_date: e.target.value || null }))}
                     />
                   </Field>
                   <Field label="יישום" error={formErrors.application}>

@@ -550,7 +550,7 @@ pm2 restart galoz-iot
 | Table | DB (env var) | Purpose |
 |-------|-------------|---------|
 | `[Energy].[dbo].[Energy]` | `SQL_DATABASE` (default: `Energy`) | Sensor readings: `Device_ID`, `ts_getway`, `value`, energy fields |
-| `[Galoziot].[dbo].[Custumer]` | `SQL_CUSTOMERS_DATABASE` (default: `Galoziot`) | Users/devices: `id_user`, `device_id`, `user_name`, `email`, `password`, `role`, `application`, `cast_num` |
+| `[Galoziot].[dbo].[Custumer]` | `SQL_CUSTOMERS_DATABASE` (default: `Galoziot`) | Users/devices: `id_user`, `device_id`, `user_name`, `email`, `password`, `role`, `application`, `cast_num`, `installation_date`, `date_exp` |
 | `[Galoziot].[dbo].[cast_{n}]` | `SQL_CUSTOMERS_DATABASE` | Weighing & Ocio sensor readings — one table per `cast_num` |
 
 Table names are resolved via `getTableName()` in `server.ts:362` using cross-database `[db].[dbo].[table]` syntax.
@@ -647,6 +647,15 @@ Ocio application uses a separate cast table (e.g. `cast_6`) with columns: `devic
 - **Duplicate `id_user` check**: The `PUT /api/customers/:id` handler verifies that the new `id_user` value doesn't already exist in the table before applying the update, and returns HTTP 400 with a Hebrew error message if it does.
 - **Do NOT change the `id_user` edit field to auto-increment** — the admin must be able to set it manually to keep `id_user` in sync with the sequential numbering scheme.
 - **ניהול משתמשים page removed** (2026-05-24) — fully superseded by ניהול לקוחות (CustomersPage).
+
+#### Date Columns in `[Galoziot].[dbo].[Custumer]`
+
+| Column | Type | Purpose |
+|--------|------|---------|
+| `installation_date` | DATE NULL | Date the device/system was physically installed at the site |
+| `date_exp` | DATE NULL | Subscription/contract expiry date |
+
+Both are editable from CustomersPage. `installation_date` is displayed per-device in the Energy sidebar device list (alongside site name, location, expiry). The user profile card in the sidebar shows only name, email, and mobile — site-specific info belongs on the device card.
 
 #### MQTT Columns in `[Galoziot].[dbo].[Custumer]`
 

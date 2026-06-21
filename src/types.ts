@@ -9,6 +9,7 @@ export interface Device {
   contact_name: string;
   mobile_phone: string;
   days_remaining?: number;
+  installation_date?: string | null;
 }
 
 export interface EnergyData {
