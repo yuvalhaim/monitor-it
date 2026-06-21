@@ -239,6 +239,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <span className="text-base md:text-sm font-mono font-semibold" dir="ltr">{userProfile.mobile_phone}</span>
               </div>
             )}
+
+            {userProfile.date_exp && (
+              <div className="flex items-center gap-2 text-[var(--sidebar-muted)]">
+                <CalendarClock className="w-4 h-4 shrink-0" />
+                <span className="text-sm md:text-xs">
+                  תפוגה: {new Date(userProfile.date_exp).toLocaleDateString('he-IL')}
+                </span>
+              </div>
+            )}
           </div>
         </div>
       )}
