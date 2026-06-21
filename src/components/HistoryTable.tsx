@@ -14,6 +14,7 @@ type SortKey = keyof EnergyData | 'ts';
 
 export const HistoryTable: React.FC<HistoryTableProps> = ({ data, deviceName, deviceId }) => {
   const isSinglePhase = data.length > 0 && data[0].meter_type === 'EM511';
+  const hasHz = data.some(d => d.hz != null);
   const [currentPage, setCurrentPage] = useState(1);
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [showRangeModal, setShowRangeModal] = useState(false);
@@ -73,8 +74,8 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({ data, deviceName, de
   );
 
   const headers = isSinglePhase
-    ? ['תאריך', 'V L1', 'A L1', 'kWh']
-    : ['תאריך', 'V L1', 'V L2', 'V L3', 'A L1', 'A L2', 'A L3', 'kWh', 'T1', 'T3'];
+    ? ['תאריך', 'V L1', 'A L1', 'kWh', ...(hasHz ? ['Hz'] : [])]
+    : ['תאריך', 'V L1', 'V L2', 'V L3', 'A L1', 'A L2', 'A L3', 'kWh', 'T1', 'T3', ...(hasHz ? ['Hz'] : [])];
 
   const getExportData = () => {
     return sortedData.map(d => isSinglePhase
@@ -83,6 +84,7 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({ data, deviceName, de
           d.vl1n.toFixed(1),
           d.AL1.toFixed(2),
           d.kwtot.toFixed(2),
+          ...(hasHz ? [d.hz?.toFixed(2) ?? ''] : []),
         ]
       : [
           new Date(d.ts).toLocaleString('he-IL'),
@@ -95,6 +97,7 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({ data, deviceName, de
           d.kwtot.toFixed(2),
           d.t1?.toFixed(2) ?? '',
           d.t3?.toFixed(2) ?? '',
+          ...(hasHz ? [d.hz?.toFixed(2) ?? ''] : []),
         ]
     );
   };
@@ -113,6 +116,7 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({ data, deviceName, de
             'V L1': d.vl1n,
             'A L1': d.AL1,
             'kWh': d.kwtot,
+            ...(hasHz ? { 'Hz': d.hz ?? null } : {}),
           }
         : {
             'תאריך': new Date(d.ts).toLocaleString('he-IL'),
@@ -121,6 +125,7 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({ data, deviceName, de
             'kWh': d.kwtot,
             'T1': d.t1 ?? null,
             'T3': d.t3 ?? null,
+            ...(hasHz ? { 'Hz': d.hz ?? null } : {}),
           }
       );
       exportToExcel(excelData, headers, fileName);
@@ -164,17 +169,19 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({ data, deviceName, de
       if (!res.ok) { const e = await res.json(); alert(e.error || 'שגיאה בטעינת נתונים'); return; }
 
       const rows: EnergyData[] = await res.json();
-      // detect phase from fetched data (may differ from current view)
+      // detect phase and hz from fetched data (may differ from current view)
       const sp = rows.length > 0 && rows[0].meter_type === 'EM511';
+      const rhz = rows.some(d => d.hz != null);
       const hdrs = sp
-        ? ['תאריך', 'V L1', 'A L1', 'kWh']
-        : ['תאריך', 'V L1', 'V L2', 'V L3', 'A L1', 'A L2', 'A L3', 'kWh', 'T1', 'T3'];
+        ? ['תאריך', 'V L1', 'A L1', 'kWh', ...(rhz ? ['Hz'] : [])]
+        : ['תאריך', 'V L1', 'V L2', 'V L3', 'A L1', 'A L2', 'A L3', 'kWh', 'T1', 'T3', ...(rhz ? ['Hz'] : [])];
       const csvRows = rows.map(d => sp
-        ? [new Date(d.ts).toLocaleString('he-IL'), d.vl1n?.toFixed(1) ?? '', d.AL1?.toFixed(2) ?? '', d.kwtot?.toFixed(2) ?? '']
+        ? [new Date(d.ts).toLocaleString('he-IL'), d.vl1n?.toFixed(1) ?? '', d.AL1?.toFixed(2) ?? '', d.kwtot?.toFixed(2) ?? '', ...(rhz ? [d.hz?.toFixed(2) ?? ''] : [])]
         : [new Date(d.ts).toLocaleString('he-IL'),
            d.vl1n?.toFixed(1) ?? '', d.vl2n?.toFixed(1) ?? '', d.vl3n?.toFixed(1) ?? '',
            d.AL1?.toFixed(2) ?? '', d.AL2?.toFixed(2) ?? '', d.AL3?.toFixed(2) ?? '',
-           d.kwtot?.toFixed(2) ?? '', d.t1?.toFixed(2) ?? '', d.t3?.toFixed(2) ?? '']
+           d.kwtot?.toFixed(2) ?? '', d.t1?.toFixed(2) ?? '', d.t3?.toFixed(2) ?? '',
+           ...(rhz ? [d.hz?.toFixed(2) ?? ''] : [])]
       );
 
       const label = rangeType === 'week' ? 'week' : rangeType === 'month' ? 'month'
@@ -359,6 +366,11 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({ data, deviceName, de
                   <SortButton columnKey="t3" label="T3" />
                 </th>
               </>}
+              {hasHz && (
+                <th className="px-3 md:px-4 py-3 md:py-4 text-xs md:text-[10px] font-bold text-fuchsia-400 uppercase tracking-widest border-b border-white/5">
+                  <SortButton columnKey="hz" label="Hz" />
+                </th>
+              )}
             </tr>
           </thead>
           <tbody className="divide-y divide-white/5">
@@ -382,6 +394,9 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({ data, deviceName, de
                   <td className="px-3 md:px-4 py-3 md:py-4 text-base md:text-sm font-mono text-[var(--foreground)]">{row.t1?.toFixed(2)}</td>
                   <td className="px-3 md:px-4 py-3 md:py-4 text-base md:text-sm font-mono text-[var(--foreground)]">{row.t3?.toFixed(2)}</td>
                 </>}
+              {hasHz && (
+                <td className="px-3 md:px-4 py-3 md:py-4 text-base md:text-sm font-mono text-fuchsia-400">{row.hz?.toFixed(2) ?? '—'}</td>
+              )}
               </tr>
             ))}
           </tbody>
