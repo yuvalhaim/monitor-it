@@ -54,9 +54,9 @@ export const HistoryChart: React.FC<HistoryChartProps> = ({ data, onRangeChange 
         vl1: record.vl1n,
         vl2: record.vl2n,
         vl3: record.vl3n,
-        al1: record.AL1,
-        al2: record.AL2,
-        al3: record.AL3,
+        al1: record.AL1 ?? 0,
+        al2: record.AL2 ?? 0,
+        al3: record.AL3 ?? 0,
       };
     }).sort((a, b) => a.ts - b.ts);
   }, [data]);
@@ -218,7 +218,7 @@ export const HistoryChart: React.FC<HistoryChartProps> = ({ data, onRangeChange 
             stroke={hidden[l.key] ? 'transparent' : l.color}
             strokeWidth={2}
             fill={hidden[l.key] ? 'transparent' : `url(#${gradPrefix}-${l.key})`}
-            dot={false} isAnimationActive={false} connectNulls name={l.key}
+            dot={false} isAnimationActive={false} name={l.key}
           />
         ))}
       </AreaChart>
