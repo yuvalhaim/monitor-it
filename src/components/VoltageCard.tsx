@@ -43,8 +43,8 @@ export const VoltageCard: React.FC<VoltageCardProps> = ({ data }) => {
                 <div className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
                 <span className="text-base font-bold text-[var(--foreground)]">פאזה L1</span>
               </td>
-              <td className="py-4 text-left font-bold text-base md:text-xl text-[var(--foreground)] font-mono">{data.vl1n.toFixed(1)}</td>
-              <td className="py-4 text-left font-bold text-base md:text-xl text-orange-500 font-mono">{data.AL1.toFixed(1)}</td>
+              <td className="py-4 text-left font-bold text-base md:text-xl text-[var(--foreground)] font-mono">{(data.vl1n ?? 0).toFixed(1)}</td>
+              <td className="py-4 text-left font-bold text-base md:text-xl text-orange-500 font-mono">{(data.AL1 ?? 0).toFixed(1)}</td>
             </tr>
             {!isSinglePhase && (
               <tr>
@@ -52,8 +52,8 @@ export const VoltageCard: React.FC<VoltageCardProps> = ({ data }) => {
                   <div className="w-2 h-2 rounded-full bg-yellow-500 shadow-[0_0_8px_rgba(234,179,8,0.5)]" />
                   <span className="text-base font-bold text-[var(--foreground)]">פאזה L2</span>
                 </td>
-                <td className="py-4 text-left font-bold text-base md:text-xl text-[var(--foreground)] font-mono">{data.vl2n.toFixed(1)}</td>
-                <td className="py-4 text-left font-bold text-base md:text-xl text-orange-500 font-mono">{data.AL2.toFixed(1)}</td>
+                <td className="py-4 text-left font-bold text-base md:text-xl text-[var(--foreground)] font-mono">{(data.vl2n ?? 0).toFixed(1)}</td>
+                <td className="py-4 text-left font-bold text-base md:text-xl text-orange-500 font-mono">{(data.AL2 ?? 0).toFixed(1)}</td>
               </tr>
             )}
             {!isSinglePhase && (
@@ -62,8 +62,8 @@ export const VoltageCard: React.FC<VoltageCardProps> = ({ data }) => {
                   <div className="w-2 h-2 rounded-full bg-[var(--primary)] shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
                   <span className="text-base font-bold text-[var(--foreground)]">פאזה L3</span>
                 </td>
-                <td className="py-4 text-left font-bold text-base md:text-xl text-[var(--foreground)] font-mono">{data.vl3n.toFixed(1)}</td>
-                <td className="py-4 text-left font-bold text-base md:text-xl text-orange-500 font-mono">{data.AL3.toFixed(1)}</td>
+                <td className="py-4 text-left font-bold text-base md:text-xl text-[var(--foreground)] font-mono">{(data.vl3n ?? 0).toFixed(1)}</td>
+                <td className="py-4 text-left font-bold text-base md:text-xl text-orange-500 font-mono">{(data.AL3 ?? 0).toFixed(1)}</td>
               </tr>
             )}
           </tbody>

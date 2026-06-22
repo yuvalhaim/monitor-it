@@ -81,20 +81,20 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({ data, deviceName, de
     return sortedData.map(d => isSinglePhase
       ? [
           new Date(d.ts).toLocaleString('he-IL'),
-          d.vl1n.toFixed(1),
-          d.AL1.toFixed(2),
-          d.kwtot.toFixed(2),
+          (d.vl1n ?? 0).toFixed(1),
+          (d.AL1 ?? 0).toFixed(2),
+          (d.kwtot ?? 0).toFixed(2),
           ...(hasHz ? [d.hz?.toFixed(2) ?? ''] : []),
         ]
       : [
           new Date(d.ts).toLocaleString('he-IL'),
-          d.vl1n.toFixed(1),
-          d.vl2n.toFixed(1),
-          d.vl3n.toFixed(1),
-          d.AL1.toFixed(2),
-          d.AL2.toFixed(2),
-          d.AL3.toFixed(2),
-          d.kwtot.toFixed(2),
+          (d.vl1n ?? 0).toFixed(1),
+          (d.vl2n ?? 0).toFixed(1),
+          (d.vl3n ?? 0).toFixed(1),
+          (d.AL1 ?? 0).toFixed(2),
+          (d.AL2 ?? 0).toFixed(2),
+          (d.AL3 ?? 0).toFixed(2),
+          (d.kwtot ?? 0).toFixed(2),
           d.t1?.toFixed(2) ?? '',
           d.t3?.toFixed(2) ?? '',
           ...(hasHz ? [d.hz?.toFixed(2) ?? ''] : []),
@@ -367,7 +367,7 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({ data, deviceName, de
                 </th>
               </>}
               {hasHz && (
-                <th className="px-3 md:px-4 py-3 md:py-4 text-xs md:text-[10px] font-bold text-fuchsia-400 uppercase tracking-widest border-b border-white/5">
+                <th className="px-3 md:px-4 py-3 md:py-4 text-xs md:text-[10px] font-bold text-[var(--muted)] uppercase tracking-widest border-b border-white/5">
                   <SortButton columnKey="hz" label="Hz" />
                 </th>
               )}
@@ -379,23 +379,23 @@ export const HistoryTable: React.FC<HistoryTableProps> = ({ data, deviceName, de
                 <td className="px-3 md:px-6 py-3 md:py-4 text-sm md:text-xs font-mono text-[var(--foreground)] whitespace-nowrap">
                   {new Date(row.ts).toLocaleString('he-IL')}
                 </td>
-                <td className="px-3 md:px-4 py-3 md:py-4 text-base md:text-sm font-mono text-[var(--foreground)]">{row.vl1n.toFixed(1)}</td>
+                <td className="px-3 md:px-4 py-3 md:py-4 text-base md:text-sm font-mono text-[var(--foreground)]">{(row.vl1n ?? 0).toFixed(1)}</td>
                 {!isSinglePhase && <>
-                  <td className="px-3 md:px-4 py-3 md:py-4 text-base md:text-sm font-mono text-[var(--foreground)]">{row.vl2n.toFixed(1)}</td>
-                  <td className="px-3 md:px-4 py-3 md:py-4 text-base md:text-sm font-mono text-[var(--foreground)]">{row.vl3n.toFixed(1)}</td>
+                  <td className="px-3 md:px-4 py-3 md:py-4 text-base md:text-sm font-mono text-[var(--foreground)]">{(row.vl2n ?? 0).toFixed(1)}</td>
+                  <td className="px-3 md:px-4 py-3 md:py-4 text-base md:text-sm font-mono text-[var(--foreground)]">{(row.vl3n ?? 0).toFixed(1)}</td>
                 </>}
-                <td className="px-3 md:px-4 py-3 md:py-4 text-base md:text-sm font-mono text-[var(--foreground)]">{row.AL1.toFixed(2)}</td>
+                <td className="px-3 md:px-4 py-3 md:py-4 text-base md:text-sm font-mono text-[var(--foreground)]">{(row.AL1 ?? 0).toFixed(2)}</td>
                 {!isSinglePhase && <>
-                  <td className="px-3 md:px-4 py-3 md:py-4 text-base md:text-sm font-mono text-[var(--foreground)]">{row.AL2.toFixed(2)}</td>
-                  <td className="px-3 md:px-4 py-3 md:py-4 text-base md:text-sm font-mono text-[var(--foreground)]">{row.AL3.toFixed(2)}</td>
+                  <td className="px-3 md:px-4 py-3 md:py-4 text-base md:text-sm font-mono text-[var(--foreground)]">{(row.AL2 ?? 0).toFixed(2)}</td>
+                  <td className="px-3 md:px-4 py-3 md:py-4 text-base md:text-sm font-mono text-[var(--foreground)]">{(row.AL3 ?? 0).toFixed(2)}</td>
                 </>}
-                <td className="px-3 md:px-4 py-3 md:py-4 text-base md:text-sm font-mono text-[var(--foreground)]">{row.kwtot.toFixed(2)}</td>
+                <td className="px-3 md:px-4 py-3 md:py-4 text-base md:text-sm font-mono text-[var(--foreground)]">{(row.kwtot ?? 0).toFixed(2)}</td>
                 {!isSinglePhase && <>
                   <td className="px-3 md:px-4 py-3 md:py-4 text-base md:text-sm font-mono text-[var(--foreground)]">{row.t1?.toFixed(2)}</td>
                   <td className="px-3 md:px-4 py-3 md:py-4 text-base md:text-sm font-mono text-[var(--foreground)]">{row.t3?.toFixed(2)}</td>
                 </>}
               {hasHz && (
-                <td className="px-3 md:px-4 py-3 md:py-4 text-base md:text-sm font-mono text-fuchsia-400">{row.hz?.toFixed(2) ?? '—'}</td>
+                <td className="px-3 md:px-4 py-3 md:py-4 text-base md:text-sm font-mono text-[var(--foreground)]">{row.hz?.toFixed(2) ?? '—'}</td>
               )}
               </tr>
             ))}

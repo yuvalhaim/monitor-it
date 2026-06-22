@@ -30,7 +30,7 @@ export const ConsumptionCard: React.FC<ConsumptionCardProps> = ({ data }) => {
         <div className="absolute inset-0 flex items-center justify-center opacity-5">
           <Activity className="w-48 h-48 text-[var(--foreground)]" />
         </div>
-        <span className="text-6xl md:text-7xl font-bold text-[var(--foreground)] font-mono tracking-tighter mb-2 z-10">{data.kwtot.toLocaleString()}</span>
+        <span className="text-6xl md:text-7xl font-bold text-[var(--foreground)] font-mono tracking-tighter mb-2 z-10">{(data.kwtot ?? 0).toLocaleString()}</span>
         <span className="text-base md:text-sm font-bold text-[var(--muted)] uppercase tracking-[0.3em] z-10">סה"כ קוט"ש</span>
       </div>
 
