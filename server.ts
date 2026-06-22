@@ -1200,9 +1200,8 @@ app.get("/api/admin/overview", authenticateToken, authorizeAdmin, async (req: an
 
       // Timestamp column — application-aware
       let tsCol: string;
-      if (app === 'energy')       tsCol = 'ts_getway';
-      else if (app === 'custom')  tsCol = '[timestamp]';
-      else                        tsCol = 'ts';
+      if (app === 'custom')  tsCol = '[timestamp]';
+      else                   tsCol = 'ts'; // energy cast tables use new schema ('ts'), not 'ts_getway'
 
       // Weighing, OffJer, and Energy store ts/ts_getway as Israel-local; Level, Ocio, Custom store UTC.
       const isIsraelLocal = (app === 'weighing' || app === 'offjer' || app === 'energy');
