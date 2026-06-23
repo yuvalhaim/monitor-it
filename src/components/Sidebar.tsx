@@ -461,32 +461,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </button>
             ))}
           </div>
-        ) : (
-          /* ── Energy device list ── */
+        ) : !isAdmin ? (
+          /* ── Energy device list (non-admin users only) ── */
           <>
             <div className="mb-4 space-y-3">
-              {user.role === 'admin' && (
-                <button
-                  onClick={() => setShowOnlyMyDevices(!showOnlyMyDevices)}
-                  className={cn(
-                    "w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm md:text-xs font-bold transition-all duration-200 border",
-                    showOnlyMyDevices
-                      ? "bg-[var(--primary)]/20 border-[var(--primary)] text-[var(--primary)]"
-                      : "bg-[var(--sidebar-hover)] border-[var(--sidebar-border)] text-[var(--sidebar-muted)] hover:text-[var(--sidebar-foreground)]"
-                  )}
-                >
-                  <span>המכשירים שלי</span>
-                  <div className={cn(
-                    "w-8 h-4 rounded-full relative transition-colors duration-200",
-                    showOnlyMyDevices ? "bg-[var(--primary)]" : "bg-[var(--sidebar-muted)]/20"
-                  )}>
-                    <div className={cn(
-                      "absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all duration-200",
-                      showOnlyMyDevices ? "right-4.5" : "right-0.5"
-                    )} />
-                  </div>
-                </button>
-              )}
               <div className="relative">
                 <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--sidebar-muted)]" />
                 <input
@@ -565,7 +543,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               ))}
             </div>
           </>
-        )}
+        ) : null}
       </div>
 
       {/* Sidebar Footer */}

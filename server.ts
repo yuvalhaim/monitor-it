@@ -1199,9 +1199,20 @@ app.get("/api/admin/overview", authenticateToken, authorizeAdmin, async (req: an
       // Ocio / Custom: no WHERE — single device per cast table
 
       // Timestamp column — application-aware
+      // Energy cast tables may be old schema (ts_getway) or new schema (ts); probe once per table.
       let tsCol: string;
-      if (app === 'custom')  tsCol = '[timestamp]';
-      else                   tsCol = 'ts'; // energy cast tables use new schema ('ts'), not 'ts_getway'
+      if (app === 'custom') {
+        tsCol = '[timestamp]';
+      } else if (app === 'energy') {
+        try {
+          await runQuery(`SELECT TOP 1 ts FROM ${tableName}`, []);
+          tsCol = 'ts';
+        } catch {
+          tsCol = 'ts_getway';
+        }
+      } else {
+        tsCol = 'ts';
+      }
 
       // Weighing, OffJer, and Energy store ts/ts_getway as Israel-local; Level, Ocio, Custom store UTC.
       const isIsraelLocal = (app === 'weighing' || app === 'offjer' || app === 'energy');
